@@ -1,0 +1,117 @@
+<Configuration>
+ <ViewDefinitions>
+   <View>
+    <Name>OperationValidationResultTable</Name>
+    <ViewSelectedBy>
+     <TypeName>OperationValidationResult</TypeName>
+    </ViewSelectedBy>
+    <GroupBy>
+      <PropertyName>Module</PropertyName>
+      <Label>Module</Label>
+    </GroupBy>
+    <TableControl>
+     <TableHeaders>
+      <TableColumnHeader><Label>Result</Label></TableColumnHeader>
+      <TableColumnHeader><Label>Name</Label></TableColumnHeader>
+     </TableHeaders>
+     <TableRowEntries>
+      <TableRowEntry>
+       <TableColumnItems>
+        <TableColumnItem><PropertyName>Result</PropertyName></TableColumnItem>
+        <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+       </TableColumnItems>
+      </TableRowEntry>
+     </TableRowEntries>
+    </TableControl>
+   </View>
+ 
+  <View>
+   <Name>OperationValidation</Name>
+   <ViewSelectedBy>
+    <TypeName>OperationValidationInfo</TypeName>
+   </ViewSelectedBy>
+   <CustomControl>
+    <CustomEntries>
+     <CustomEntry>
+      <CustomItem>
+
+       <Text>Module:   </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>ModuleName</PropertyName>
+         </ExpressionBinding>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+
+       <Text>Type:     </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>Type</PropertyName>
+         </ExpressionBinding>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+
+       <Text>File:     </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>File</PropertyName>
+         </ExpressionBinding>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+       
+       <Text>FilePath: </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>FilePath</PropertyName>
+         </ExpressionBinding>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+
+       <Text>Name: </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+        <NewLine/>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>Name</PropertyName>
+          <EnumerateCollection/>
+          <CustomControl>
+            <CustomEntries>
+              <CustomEntry>
+                <CustomItem>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </CustomEntry>
+            </CustomEntries>
+          </CustomControl>
+         </ExpressionBinding>
+        </CustomItem>
+       </Frame>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+      </CustomItem>
+     </CustomEntry>
+    </CustomEntries>
+   </CustomControl>
+  </View>
+ </ViewDefinitions>
+</Configuration>
