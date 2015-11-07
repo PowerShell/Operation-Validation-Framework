@@ -19,7 +19,7 @@ The module structure required is as follows:
 
 It supplies two cmdlets:
 ```
-PS# get-help \*operationvalidation
+PS# get-help *operationvalidation
 
 Name                              Category  Synopsis
 ----                              --------  --------
