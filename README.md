@@ -11,23 +11,24 @@ test names in those files will be returned.
 
 The module structure required is as follows:
 
-ModuleBase\\
-    Diagnostics\\
-        Simple         # simple tests are held in this location
-                         (e.g., ping, serviceendpoint checks)
-        Comprehensive  # comprehensive scenario tests should be placed here
+* ModuleBase\  
+   * Diagnostics\  
+      * Simple         *simple tests are held in this location  (e.g., ping, serviceendpoint checks)*
+      * Comprehensive  *comprehensive scenario tests should be placed here*
 
 
 It supplies two cmdlets:
-
-PS# get-help \*operationvalidation
+```
+PS# get-help *operationvalidation
 
 Name                              Category  Synopsis
 ----                              --------  --------
 Get-OperationValidation           Function  Retrieve the operational tests from modules
 Invoke-OperationValidation        Function  Invoke the operational tests from modules
+```
 
 ## Examples 
+```
     PS>get-operationtest -ModuleName C:\temp\modules\AddNumbers
 
 
@@ -76,3 +77,4 @@ Invoke-OperationValidation        Function  Invoke the operational tests from mo
     Passed  Scenario targeted tests:The Firewall Rules:A rule for TCP port 3389 is enabled
     Passed  Scenario targeted tests:The Firewall Rules:A rule for UDP port 3389 is enabled
 
+```
