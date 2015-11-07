@@ -246,7 +246,7 @@ param (
                     {
                         Write-Verbose -Message $file.fullname
                         $testName = Get-TestFromScript -scriptPath $file.FullName
-                        new-OperationValidationInfo -FilePath $file.Fullname -File $file.Name -Type $dir -Name $testName -Module $Module
+                        new-OperationValidationInfo -FilePath $file.Fullname -File $file.Name -Type $dir -Name $testName -ModuleName $Module
                     }
                 }
             }
@@ -305,7 +305,7 @@ function Invoke-OperationValidation
     [CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="FileAndTest")]
     param (
         [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$testFilePath,
-        [Parameter(ParameterSetName="FileAndTest",ValueFromPipeline=$true)][hashtable[]]$TestInfo,
+        [Parameter(ParameterSetName="FileAndTest",ValueFromPipeline=$true)][pscustomobject[]]$TestInfo,
         [Parameter(ParameterSetName="UseGetOperationTest")][string[]]$ModuleName = "*",
         [Parameter(ParameterSetName="UseGetOperationTest")]
         [ValidateSet("Simple","Comprehensive")][string[]]$TestType = @("Simple","Comprehensive"),
@@ -331,7 +331,8 @@ function Invoke-OperationValidation
     {
         if ( $PSCmdlet.ParameterSetName -eq "UseGetOperationTest" )
         {
-            Get-OperationValidation -ModuleName $ModuleName -TestType $TestType | Invoke-OperationValidation -IncludePesterOutput:$IncludePesterOutput
+            $tests = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType 
+            $tests | Invoke-OperationValidation -IncludePesterOutput:$IncludePesterOutput
             return
         }
         
@@ -347,17 +348,17 @@ function Invoke-OperationValidation
             # first check to be sure all of the TestInfos are sane
             foreach($ti in $testinfo)
             {
-                if ( ! ($ti.ContainsKey("TestFilePath") -and $ti.ContainsKey("TestName")))
+                if ( ! ($ti.FilePath -and $ti.Name))
                 {
                     throw "TestInfo must contain the path and the list of tests"
                 }
             }
             
-            write-verbose -Message ("EXECUTING: {0} {1}" -f $ti.TestFilePath,($ti.TestName -join ","))
-            foreach($tname in $ti.TestName)
+            write-verbose -Message ("EXECUTING: {0} {1}" -f $ti.FilePath,($ti.Name -join ","))
+            foreach($tname in $ti.Name)
             {
-                $testResult = Invoke-pester -Path $ti.TestFilePath -TestName $tName -quiet:$quiet -PassThru
-                Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.TestFilePath
+                $testResult = Invoke-pester -Path $ti.FilePath -TestName $tName -quiet:$quiet -PassThru
+                Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
                 Convert-TestResult $testResult 
             }
             return
@@ -391,7 +392,7 @@ Function Convert-TestResult
         }
         $Module = $result.Path.split([io.path]::DirectorySeparatorChar)[-4]
         $TestName = "{0}:{1}:{2}" -f $testResult.Describe,$testResult.Context,$testResult.Name
-        New-OperationValidationResult -Module $Module -TestName $TestName -FileName $result.path -TestResult $testresult.result -RawResult $testResult -Error $TestError
+        New-OperationValidationResult -Module $Module -Name $TestName -FileName $result.path -Result $testresult.result -RawResult $testResult -Error $TestError
     }
 
 }
