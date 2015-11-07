@@ -11,8 +11,8 @@ test names in those files will be returned.
 
 The module structure required is as follows:
 
-ModuleBase\
-    Diagnostics\
+ModuleBase\\
+    Diagnostics\\
         Simple         # simple tests are held in this location
                          (e.g., ping, serviceendpoint checks)
         Comprehensive  # comprehensive scenario tests should be placed here
