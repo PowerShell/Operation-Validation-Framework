@@ -120,7 +120,7 @@ The type of tests to retrieve, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
 
 .EXAMPLE
-PS> get-operationtest -ModuleName C:\temp\modules\AddNumbers
+PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
 
     Type:         Simple
     File:     addnum.tests.ps1
@@ -269,7 +269,7 @@ The type of tests to invoke, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
 
 .EXAMPLE
-PS> Get-OperationTest -ModuleName operationtest | invoke-operationtest
+PS> Get-OperationValidation -ModuleName OperationValidation | Invoke-OperationValidation -IncludePesterOutput
 Describing Simple Test Suite
  [+] first Operational test 20ms
  [+] second Operational test 19ms
