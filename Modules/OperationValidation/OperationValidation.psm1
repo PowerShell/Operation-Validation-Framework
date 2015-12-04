@@ -202,15 +202,15 @@ param (
             param ( [string[]]$Name )
             foreach($p in $env:psmodulepath.split(";"))
             {
-                if ( test-path $p )
+                if ( test-path -path $p )
                 {
-                    foreach($modDir in get-childitem $p -directory)
+                    foreach($modDir in get-childitem -path $p -directory)
                     {
                         foreach ($n in $name )
                         {
                             if ( $modDir.Name -like $n )
                             {
-                                if ( test-path ($modDir.FullName + "\Diagnostics"))
+                                if ( test-path -path ($modDir.FullName + "\Diagnostics"))
                                 {
                                     $modDir.FullName
                                     break
@@ -387,7 +387,7 @@ Function Convert-TestResult
         $testError = $null
         if ( $testResult.Result -eq "Failed" )
         {
-            Write-Verbose "Creating error object"
+            Write-Verbose -message "Creating error object"
             $testError = new-OperationValidationFailure -Stacktrace $testResult.StackTrace -FailureMessage $testResult.FailureMessage
         }
         $Module = $result.Path.split([io.path]::DirectorySeparatorChar)[-4]
