@@ -210,9 +210,24 @@ param (
                         {
                             if ( $modDir.Name -like $n )
                             {
+                                # now determine if there's a diagnostics directory, or a version
                                 if ( test-path -path ($modDir.FullName + "\Diagnostics"))
                                 {
                                     $modDir.FullName
+                                    break
+                                }
+                                $versionDirectories = Get-Childitem -path $modDir.FullName -dir | 
+                                    where-object { $_.name -as [version] }
+                                $potentialDiagnostics = $versionDirectories | where-object {
+                                    test-path ($_.fullname + "\Diagnostics")
+                                    }
+                                # now select the most recent module path which has diagnostics
+                                $DiagnosticDir = $potentialDiagnostics | 
+                                    sort-object {$_.name -as [version]} | 
+                                    Select-Object -Last 1
+                                if ( $DiagnosticDir )
+                                {
+                                    $DiagnosticDir.FullName
                                     break
                                 }
                             }
