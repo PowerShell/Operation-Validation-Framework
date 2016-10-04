@@ -29,7 +29,7 @@ Invoke-OperationValidation        Function  Invoke the operational tests from mo
 
 ## Examples 
 ```
-    PS>get-operationtest -ModuleName C:\temp\modules\AddNumbers
+    PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
 
 
     Type:         Simple
@@ -48,7 +48,7 @@ Invoke-OperationValidation        Function  Invoke the operational tests from mo
             Comprehensive Examples
 
 
-    PS> invoke-operationtest -IncludePesterOutput
+    PS> Invoke-OperationValidation -IncludePesterOutput
 
     Describing Simple Test Suite
      [+] first Operational test 20ms
