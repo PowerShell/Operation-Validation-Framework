@@ -234,7 +234,7 @@ param (
                                     else
                                     {
                                         $modDir.FullName
-                                        break    
+                                        break
                                     }
                                 }
 
@@ -280,7 +280,7 @@ param (
         {
             $moduleCollection = Get-ModuleList -Name $ModuleName
         }
-        
+
         $count = 1;
         $moduleCount = @($moduleCollection).Count
         foreach($module in $moduleCollection)
@@ -311,7 +311,7 @@ param (
                     foreach($file in get-childitem -path $testDir -filter *.tests.ps1)
                     {
                         Write-Verbose -Message "PESTER TEST: $($file.fullname)"
-                        
+
                         # Pull out parameters to Pester script if they exist
                         $script = Get-Command -Name $file.fullname
                         $parameters = $script.Parameters
@@ -332,7 +332,7 @@ param (
                                 Version =  [version]$manifest.Version
                                 Parameters = $parameters
                             }
-                            New-OperationValidationInfo @modInfoParams   
+                            New-OperationValidationInfo @modInfoParams
                         }
                     }
                 }
