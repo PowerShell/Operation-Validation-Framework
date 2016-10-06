@@ -46,6 +46,7 @@ function new-OperationValidationInfo
         [Parameter()][string[]]$TestCases,
         [Parameter(Mandatory=$true)][ValidateSet("None","Simple","Comprehensive")][string]$Type,
         [Parameter()][string]$modulename,
+        [Parameter()][Version]$Version,
         [Parameter()][hashtable]$Parameters
         )
     $o = [pscustomobject]@{
@@ -55,6 +56,7 @@ function new-OperationValidationInfo
         TestCases = $testCases
         Type = $type
         ModuleName = $modulename
+        Version = $Version
         ScriptParameters = $Parameters
     }
     $o.psobject.Typenames.Insert(0,"OperationValidationInfo")
@@ -69,7 +71,6 @@ function Get-TestFromScript
     param ( [string]$scriptPath )
     $errs = $null
     $tok =[System.Management.Automation.PSParser]::Tokenize((get-content -read 0 -Path $scriptPath), [ref]$Errs)
-    write-verbose -Message $scriptPath
 
     for($i = 0; $i -lt $tok.count; $i++) {
         if ( $tok[$i].type -eq "Command" -and $tok[$i].content -eq "Describe" )
@@ -285,20 +286,31 @@ param (
         foreach($module in $moduleCollection)
         {
             Write-Progress -Activity ("Searching for Diagnostics in " + $module) -PercentComplete ($count++/$moduleCount*100) -status " "
-            $diagnosticsDir=$module + "\Diagnostics"
+            $diagnosticsDir = "$module\Diagnostics"
+
+            # Get the module manifest so we can pull out the version
+            $moduleName = Split-Path -Path $module -Leaf
+            $manifestFile = Get-ChildItem -Path $module -Filter "$moduleName.psd1"
+            if (-not $manifestFile) {
+                # We may be in a "version" directory so get the actual module name from the parent directory
+                $parent = (Split-Path -Path $module -Parent).Name
+                $manifestFile = Get-ChildItem -Path $module -Filter "$parent.psd1"
+            }
+            $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false
+
             if ( test-path -path $diagnosticsDir )
             {
                 foreach($dir in $testType)
                 {
-                    $testDir = "$diagnosticsDir\$dir"
-                    write-verbose -Message "SPECIFIC TEST: $testDir"
+                    $testDir = Join-Path -Path $diagnosticsDir -ChildPath $dir
+                    write-verbose -Message "TEST DIR: $testDir"
                     if ( ! (test-path -path $testDir) )
                     {
                         continue
                     }
                     foreach($file in get-childitem -path $testDir -filter *.tests.ps1)
                     {
-                        Write-Verbose -Message $file.fullname
+                        Write-Verbose -Message "PESTER TEST: $($file.fullname)"
                         
                         # Pull out parameters to Pester script if they exist
                         $script = Get-Command -Name $file.fullname
@@ -311,7 +323,16 @@ param (
 
                         $testNames = @(Get-TestFromScript -scriptPath $file.FullName)
                         foreach ($testName in $testNames) {
-                            New-OperationValidationInfo -FilePath $file.Fullname -File $file.Name -Type $dir -Name $testName -ModuleName $Module -Parameters $parameters
+                            $modInfoParams = @{
+                                FilePath = $file.Fullname
+                                File = $file.Name
+                                Type = $dir
+                                Name = $testName
+                                ModuleName =  $Module
+                                Version =  [version]$manifest.Version
+                                Parameters = $parameters
+                            }
+                            New-OperationValidationInfo @modInfoParams   
                         }
                     }
                 }
@@ -431,7 +452,7 @@ function Invoke-OperationValidation
                 }
             }
 
-            Write-Verbose -Message ("EXECUTING: {0} {1}" -f $ti.FilePath,($ti.Name -join ","))
+            Write-Verbose -Message ("EXECUTING: {0} [{1}]" -f $ti.FilePath,($ti.Name -join ","))
             foreach($ti in $testinfo)
             {
                 $pesterParams = @{
@@ -446,7 +467,7 @@ function Invoke-OperationValidation
                     Write-Verbose -Message 'Test has script parameters'
                     if ($PSBoundParameters.ContainsKey('Overrides'))
                     {
-                        Write-Verbose -Message "Overriding with parameters:`n$($Overrides | Format-List -Property * | Out-String)"
+                        Write-Verbose -Message "Overriding with parameters:`n$($Overrides | Format-Table -Property Key, Value | Out-String)"
                         $pesterParams.Script = @{
                             Path = $ti.FilePath
                             Parameters = $Overrides
