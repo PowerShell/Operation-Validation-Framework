@@ -118,9 +118,13 @@ Additional module directories may be added. If you wish to check both
 $env:psmodulepath and your own specific locations, use
 *,<yourmodulepath>
 
-.PARAMETER Type
+.PARAMETER TestType
 The type of tests to retrieve, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER Version
+The version of the module to retrieve. If the specified, the latest version
+of the module will be retured.
 
 .EXAMPLE
 PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
@@ -348,12 +352,46 @@ Invoke the operational tests from modules
 .DESCRIPTION
 Modules which include Diagnostics tests are executed via this cmdlet
 
-.PARAMETER testFilePath
+.PARAMETER TestFilePath
 The path to a diagnostic test to execute. By default all discoverable diagnostics will be invoked
 
 .PARAMETER TestInfo
 The type of tests to invoke, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER ModuleName
+By default this is * which will retrieve and execute all OVF modules in $env:psmodulepath
+Additional module directories may be added. If you wish to check both
+$env:psmodulepath and your own specific locations, use
+*,<yourmodulepath>
+
+.PARAMETER TestType
+The type of tests to execute, this may be either "Simple", "Comprehensive"
+or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER IncludePesterOutput
+Include the Pester output when execute the tests.
+
+.PARAMETER Version
+The version of the module to retrieve. If the specified, the latest version
+of the module will be retured.
+
+.PARAMETER Overrides
+If the Pester test(s) include script parameters, those parameters can be overridden by
+specifying a hashtable of values. The key(s) in the hashtable must match the parameter
+names in the Pester test.
+
+For example, if the Pester test includes a parameter block like the following, one or more of
+these parameters can be overriden using values from the hashtable passed to the -Overrides parameter.
+
+Pester test script:
+param(
+    [int]$SomeValue = 100
+    [bool]$ExtraChecks = $false
+)
+
+Overrides the default parameter values:
+Invoke-OperationValidation -ModuleName MyModule -Overrides @{ SomeValue = 500; ExtraChecks = $true }
 
 .EXAMPLE
 PS> Get-OperationValidation -ModuleName OperationValidation | Invoke-OperationValidation -IncludePesterOutput
@@ -391,7 +429,7 @@ function Invoke-OperationValidation
 {
     [CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="FileAndTest")]
     param (
-        [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$testFilePath,
+        [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$TestFilePath,
         [Parameter(ParameterSetName="FileAndTest",ValueFromPipeline=$true)][pscustomobject[]]$TestInfo,
         [Parameter(ParameterSetName="UseGetOperationTest")][string[]]$ModuleName = "*",
         [Parameter(ParameterSetName="UseGetOperationTest")]
@@ -497,9 +535,9 @@ function Invoke-OperationValidation
             return
         }
 
-        if ($testFilePath)
+        if ($TestFilePath)
         {
-            foreach($filePath in $testFilePath) {
+            foreach($filePath in $TestFilePath) {
                 write-progress -Activity "Invoking tests in $filePath"
                 if ( $PSCmdlet.ShouldProcess($filePath)) {
                     $testResult = Invoke-Pester $filePath -passthru -quiet:$quiet
