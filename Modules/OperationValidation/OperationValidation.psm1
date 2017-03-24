@@ -296,11 +296,21 @@ param (
             $moduleName = Split-Path -Path $module -Leaf
             $manifestFile = Get-ChildItem -Path $module -Filter "$moduleName.psd1"
             if (-not $manifestFile) {
-                # We may be in a "version" directory so get the actual module name from the parent directory
-                $parent = (Split-Path -Path $module -Parent).Name
-                $manifestFile = Get-ChildItem -Path $module -Filter "$parent.psd1"
+                if ($moduleName -as [version]) {
+                    # We are in a "version" directory so get the actual module name from the parent directory
+                    $parent = (Split-Path -Path $module -Parent).Name
+                    $manifestFile = Get-ChildItem -Path $module -Filter "$parent.psd1"
+                }
             }
-            $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false
+
+            # Some OVF modules might not have a manifest (.psd1) file.
+            if ($manifestFile) {
+                $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false
+            }
+            else
+            {
+                $manifest = $null
+            }
 
             if ( test-path -path $diagnosticsDir )
             {
@@ -333,7 +343,7 @@ param (
                                 Type = $dir
                                 Name = $testName
                                 ModuleName =  $Module
-                                Version =  [version]$manifest.Version
+                                Version = if ($manifest.Version) { [version]$manifest.Version } else { $null }
                                 Parameters = $parameters
                             }
                             New-OperationValidationInfo @modInfoParams
