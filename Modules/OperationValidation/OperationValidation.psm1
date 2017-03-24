@@ -227,7 +227,7 @@ param (
                                     # Did we specify a specific version to find?
                                     if ($PSBoundParameters.ContainsKey('Version'))
                                     {
-                                        $manifestFile = Get-ChildItem -Path $modDir.FullName -Filter "$modDir.psd1" | Select-Object -First 1
+                                        $manifestFile = Get-ChildItem -Path $modDir.FullName -Filter "$($modDir.Name).psd1" | Select-Object -First 1
                                         $manifest = Test-ModuleManifest -Path $manifestFile.FullName
                                         if ($manifest.Version -eq $Version)
                                         {
