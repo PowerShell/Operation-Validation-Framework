@@ -85,6 +85,15 @@ Describe "OperationValidation Module Tests" {
             @($tests).Count | Should be 1
             $tests.File | should be WindowsSearch.Simple.Tests.ps1
         }
+        It "Can find a specific version of a module" {
+            $tests = Get-OperationValidation -ModuleName 'VersionedModule' -Version '1.0.0'
+            $tests.Count | Should be 1
+            $tests.File | Should be 'PSGallery.Simple.Tests.ps1'
+        }
+        It "Can get the latest version of a module if no version is specified" {
+            $tests = Get-OperationValidation -ModuleName VersionedModule
+            $tests.Version | Should be [Version]'2.0.0'
+        }
         It "Formats the output appropriately" {
             $output = Get-OperationValidation -modulename OperationValidation | out-string -str -width 210|?{$_}
             $expected = ".*Module:   .*OperationValidation",
