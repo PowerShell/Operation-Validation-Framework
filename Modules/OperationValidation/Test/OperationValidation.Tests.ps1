@@ -92,7 +92,7 @@ Describe "OperationValidation Module Tests" {
         }
         It "Can get the latest version of a module if no version is specified" {
             $tests = Get-OperationValidation -ModuleName VersionedModule
-            $tests.Version | Should be [Version]'2.0.0'
+            $tests.Version | Should be ([Version]'2.0.0')
         }
         It "Formats the output appropriately" {
             $output = Get-OperationValidation -modulename OperationValidation | out-string -str -width 210|?{$_}
