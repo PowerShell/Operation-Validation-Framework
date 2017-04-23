@@ -256,7 +256,7 @@ param (
 
                                 $potentialDiagnostics = $versionDirectories | where-object {
                                     test-path ($_.fullname + "\Diagnostics")
-                                    }
+                                }
                                 # now select the most recent module path which has diagnostics
                                 $DiagnosticDir = $potentialDiagnostics |
                                     sort-object {$_.name -as [version]} |
@@ -294,12 +294,12 @@ param (
 
             # Get the module manifest so we can pull out the version
             $moduleName = Split-Path -Path $module -Leaf
-            $manifestFile = Get-ChildItem -Path $module -Filter "$moduleName.psd1"
+            $manifestFile = Get-ChildItem -Path $module -Filter "$($moduleName).psd1"
             if (-not $manifestFile) {
-                if ($moduleName -as [version]) {
+                if ("$moduleName" -as [version]) {
                     # We are in a "version" directory so get the actual module name from the parent directory
-                    $parent = (Split-Path -Path $module -Parent).Name
-                    $manifestFile = Get-ChildItem -Path $module -Filter "$parent.psd1"
+                    $parent = Split-Path -Path (Split-Path -Path $module -Parent) -Leaf
+                    $manifestFile = Get-ChildItem -Path $module -Filter "$($parent).psd1"
                 }
             }
 
