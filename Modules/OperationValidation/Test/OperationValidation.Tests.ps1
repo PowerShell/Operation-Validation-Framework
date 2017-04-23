@@ -8,12 +8,13 @@ Describe "OperationValidation Module Tests" {
         {
             $env:psmodulepath += ";$moduleDir"
         }
+        Remove-Module Microsoft.PowerShell.Operation.Validation -Force -ErrorAction SilentlyContinue
         Import-Module OperationValidation -Force
         $Commands = Get-Command -module OperationValidation|sort-object Name
     }
     AfterAll {
         $env:PSModulePath = $SavedModulePath
-        remove-Module OperationValidation
+        Remove-Module OperationValidation
     }
     It "Module has been loaded" {
         Get-Module OperationValidation | should not BeNullOrEmpty
@@ -86,13 +87,19 @@ Describe "OperationValidation Module Tests" {
             $tests.File | should be WindowsSearch.Simple.Tests.ps1
         }
         It "Can find a specific version of a module" {
-            $tests = Get-OperationValidation -ModuleName 'VersionedModule' -Version '1.0.0'
-            $tests.Count | Should be 1
-            $tests.File | Should be 'PSGallery.Simple.Tests.ps1'
+            $v1Tests = @(Get-OperationValidation -ModuleName 'VersionedModule' -Version '1.0.0')
+            $v1Tests.Count | Should be 1
+            $v1Tests.File | Should be 'PSGallery.Simple.Tests.ps1'
+
+            $v2Tests = @(Get-OperationValidation -ModuleName 'VersionedModule' -Version '2.0.0')
+            $v2Tests.Count | Should be 2
+            $v2Tests[0].File | Should be 'PSGallery.Simple.Tests.ps1'
+            $v2Tests[1].File | Should be 'PSGallery.Simple.Tests.ps1'
         }
         It "Can get the latest version of a module if no version is specified" {
             $tests = Get-OperationValidation -ModuleName VersionedModule
-            $tests.Version | Should be ([Version]'2.0.0')
+            $tests[0].Version | Should be ([Version]'2.0.0')
+            $tests[1].Version | Should be ([Version]'2.0.0')
         }
         It "Formats the output appropriately" {
             $output = Get-OperationValidation -modulename OperationValidation | out-string -str -width 210|?{$_}
