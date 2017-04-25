@@ -305,7 +305,7 @@ param (
 
             # Some OVF modules might not have a manifest (.psd1) file.
             if ($manifestFile) {
-                $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false
+                $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false -ErrorAction SilentlyContinue
             }
             else
             {
