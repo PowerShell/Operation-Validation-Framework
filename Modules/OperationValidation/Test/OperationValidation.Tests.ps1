@@ -122,4 +122,20 @@ Describe "OperationValidation Module Tests" {
             }
         }
     }
+
+    Context "Invoke-OperationValidation passes override parameters" {
+        $tests = Get-OperationValidation -ModuleName VersionedModule -Version '1.0.0'
+
+        It "No override parameters supplied" {
+            $results = $tests | Invoke-OperationValidation
+            $results[0].Result | Should be 'Passed'
+            $results[1].Result | Should be 'Passed'
+        }
+
+        It "Override parameters supplied" {
+            $results = $tests | Invoke-OperationValidation -Overrides @{ WebsiteUrl = 'http://www.microsoft.com'}
+            $results[0].Result | Should be 'Passed'
+            $results[1].Result | Should be 'Failed'
+        }
+    }
 }
