@@ -1,7 +1,18 @@
+param(
+    [string]$WebsiteUrl = 'https://www.powershellgallery.com',
+    [string]$StatusCode = 'OK'
+)
+
+
 Describe 'Simple Validation of PSGallery' {
     It 'The PowerShell Gallery should be responsive' {
-        $request = [System.Net.WebRequest]::Create('https://www.powershellgallery.com')
+        $request = [System.Net.WebRequest]::Create($WebsiteUrl)
         $response = $Request.GetResponse()
-        $response.StatusCode | Should be OK
+        $response.StatusCode | Should Be $StatusCode
+    }
+
+    it 'Has correct test parameters' {
+        $WebsiteUrl | Should Be 'https://www.powershellgallery.com'
+        $StatusCode | Should Be 'OK'
     }
 }
