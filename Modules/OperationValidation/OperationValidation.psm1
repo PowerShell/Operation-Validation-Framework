@@ -453,7 +453,6 @@ function Invoke-OperationValidation
         )
     BEGIN
     {
-        $quiet = ! $IncludePesterOutput
         if ( ! (get-module -Name Pester))
         {
             if ( get-module -list Pester )
@@ -505,9 +504,26 @@ function Invoke-OperationValidation
             {
                 $pesterParams = @{
                     TestName = $ti.Name
-                    Quiet = $quiet
                     PassThru = $true
                     Verbose = $false
+                }
+
+                # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
+                $pesterMod = Get-Module -Name Pester
+                if ($pesterMod.Version -ge '4.0.0')
+                {
+                    if ($IncludePesterOutput)
+                    {
+                        $pesterParams.Show = 'All'
+                    }
+                    else
+                    {
+                        $pesterParams.Show = 'None'
+                    }
+                }
+                else
+                {
+                    $pesterParams.Quiet = !$IncludePesterOutput
                 }
 
                 if ($ti.ScriptParameters)
