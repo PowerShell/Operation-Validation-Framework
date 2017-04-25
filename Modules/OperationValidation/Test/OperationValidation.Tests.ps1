@@ -82,7 +82,6 @@ Describe "OperationValidation Module Tests" {
         }
         It "Can find tests which don't have an actual module" {
             $tests = Get-OperationValidation -moduleName Example.WindowsSearch
-            write-host $tests.File
             @($tests).Count | Should be 1
             $tests.File | should be WindowsSearch.Simple.Tests.ps1
         }
