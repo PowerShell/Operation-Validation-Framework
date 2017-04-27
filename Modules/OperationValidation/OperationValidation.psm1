@@ -39,13 +39,15 @@ function New-OperationValidationResult
 }
 function new-OperationValidationInfo
 {
-    param ( 
+    param (
         [Parameter(Mandatory=$true)][string]$File,
         [Parameter(Mandatory=$true)][string]$FilePath,
         [Parameter(Mandatory=$true)][string[]]$Name,
         [Parameter()][string[]]$TestCases,
         [Parameter(Mandatory=$true)][ValidateSet("None","Simple","Comprehensive")][string]$Type,
-        [Parameter()][string]$modulename
+        [Parameter()][string]$modulename,
+        [Parameter()][Version]$Version,
+        [Parameter()][hashtable]$Parameters
         )
     $o = [pscustomobject]@{
         File = $File
@@ -54,6 +56,8 @@ function new-OperationValidationInfo
         TestCases = $testCases
         Type = $type
         ModuleName = $modulename
+        Version = $Version
+        ScriptParameters = $Parameters
     }
     $o.psobject.Typenames.Insert(0,"OperationValidationInfo")
     $ToString = { return ("{0} ({1}): {2}" -f $this.testFile, $this.Type, ($this.TestCases -join ",")) }
@@ -67,16 +71,15 @@ function Get-TestFromScript
     param ( [string]$scriptPath )
     $errs = $null
     $tok =[System.Management.Automation.PSParser]::Tokenize((get-content -read 0 -Path $scriptPath), [ref]$Errs)
-    write-verbose -Message $scriptPath
 
     for($i = 0; $i -lt $tok.count; $i++) {
-        if ( $tok[$i].type -eq "Command" -and $tok[$i].content -eq "Describe" ) 
+        if ( $tok[$i].type -eq "Command" -and $tok[$i].content -eq "Describe" )
         {
             $i++
             if ( $tok[$i].Type -eq "String" ) { $tok[$i].Content }
             else
             {
-                # ok - we didn't get the describe text first, 
+                # ok - we didn't get the describe text first,
                 # we likely saw a "-Tags" statement, so that means that
                 # the describe text will immediately preceed the scriptblock
                 while($tok[$i].Type -ne "GroupStart")
@@ -95,29 +98,33 @@ function Get-TestFromScript
 Retrieve the operational tests from modules
 
 .DESCRIPTION
-Modules which include a Diagnostics directory are inspected for 
+Modules which include a Diagnostics directory are inspected for
 Pester tests in either the "Simple" or "Comprehensive" directories.
 If files are found in those directories, they will be inspected to determine
-whether they are Pester tests. If Pester tests are found, the 
+whether they are Pester tests. If Pester tests are found, the
 test names in those files will be returned.
 
 The module structure required is as follows:
 
 ModuleBase\
     Diagnostics\
-        Simple         # simple tests are held in this location 
+        Simple         # simple tests are held in this location
                          (e.g., ping, serviceendpoint checks)
         Comprehensive  # comprehensive scenario tests should be placed here
-         
+
 .PARAMETER ModuleName
 By default this is * which will retrieve all modules in $env:psmodulepath
 Additional module directories may be added. If you wish to check both
 $env:psmodulepath and your own specific locations, use
 *,<yourmodulepath>
 
-.PARAMETER Type
+.PARAMETER TestType
 The type of tests to retrieve, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER Version
+The version of the module to retrieve. If the specified, the latest version
+of the module will be retured.
 
 .EXAMPLE
 PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
@@ -146,7 +153,8 @@ function Get-OperationValidation
 [CmdletBinding()]
 param (
     [Parameter(Position=0)][string[]]$ModuleName = "*",
-    [Parameter()][ValidateSet("Simple","Comprehensive")][string[]]$TestType =  @("Simple","Comprehensive")
+    [Parameter()][ValidateSet("Simple","Comprehensive")][string[]]$TestType =  @("Simple","Comprehensive"),
+    [Parameter()][Version]$Version
     )
 
     BEGIN
@@ -197,9 +205,12 @@ param (
                 }
             }
         }
-        function Get-ModuleList 
+        function Get-ModuleList
         {
-            param ( [string[]]$Name )
+            param (
+                [string[]]$Name,
+                [version]$Version
+            )
             foreach($p in $env:psmodulepath.split(";"))
             {
                 if ( test-path -path $p )
@@ -213,17 +224,42 @@ param (
                                 # now determine if there's a diagnostics directory, or a version
                                 if ( test-path -path ($modDir.FullName + "\Diagnostics"))
                                 {
-                                    $modDir.FullName
-                                    break
+                                    # Did we specify a specific version to find?
+                                    if ($PSBoundParameters.ContainsKey('Version'))
+                                    {
+                                        $manifestFile = Get-ChildItem -Path $modDir.FullName -Filter "$($modDir.Name).psd1" | Select-Object -First 1
+                                        $manifest = Test-ModuleManifest -Path $manifestFile.FullName
+                                        if ($manifest.Version -eq $Version)
+                                        {
+                                            $modDir.FullName
+                                            break
+                                        }
+                                    }
+                                    else
+                                    {
+                                        $modDir.FullName
+                                        break
+                                    }
                                 }
-                                $versionDirectories = Get-Childitem -path $modDir.FullName -dir | 
-                                    where-object { $_.name -as [version] }
+
+                                # Get latest version if no specific version specified
+                                if ($PSBoundParameters.ContainsKey('Version'))
+                                {
+                                    $versionDirectories = Get-Childitem -path $modDir.FullName -dir |
+                                        where-object { $_.name -as [version] -and $_.Name -eq $Version }
+                                }
+                                else
+                                {
+                                    $versionDirectories = Get-Childitem -path $modDir.FullName -dir |
+                                        where-object { $_.name -as [version] }
+                                }
+
                                 $potentialDiagnostics = $versionDirectories | where-object {
                                     test-path ($_.fullname + "\Diagnostics")
-                                    }
+                                }
                                 # now select the most recent module path which has diagnostics
-                                $DiagnosticDir = $potentialDiagnostics | 
-                                    sort-object {$_.name -as [version]} | 
+                                $DiagnosticDir = $potentialDiagnostics |
+                                    sort-object {$_.name -as [version]} |
                                     Select-Object -Last 1
                                 if ( $DiagnosticDir )
                                 {
@@ -240,28 +276,78 @@ param (
     PROCESS
     {
         Write-Progress -Activity "Inspecting Modules" -Status " "
-        $moduleCollection = Get-ModuleList -Name $ModuleName   
-        $count = 1; 
+        if ($PSBoundParameters.ContainsKey('Version'))
+        {
+            $moduleCollection = Get-ModuleList -Name $ModuleName -Version $Version
+        }
+        else
+        {
+            $moduleCollection = Get-ModuleList -Name $ModuleName
+        }
+
+        $count = 1;
         $moduleCount = @($moduleCollection).Count
         foreach($module in $moduleCollection)
         {
             Write-Progress -Activity ("Searching for Diagnostics in " + $module) -PercentComplete ($count++/$moduleCount*100) -status " "
-            $diagnosticsDir=$module + "\Diagnostics" 
+            $diagnosticsDir = "$module\Diagnostics"
+
+            # Get the module manifest so we can pull out the version
+            $moduleName = Split-Path -Path $module -Leaf
+            $manifestFile = Get-ChildItem -Path $module -Filter "$($moduleName).psd1"
+            if (-not $manifestFile) {
+                if ("$moduleName" -as [version]) {
+                    # We are in a "version" directory so get the actual module name from the parent directory
+                    $parent = Split-Path -Path (Split-Path -Path $module -Parent) -Leaf
+                    $manifestFile = Get-ChildItem -Path $module -Filter "$($parent).psd1"
+                }
+            }
+
+            # Some OVF modules might not have a manifest (.psd1) file.
+            if ($manifestFile) {
+                $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false -ErrorAction SilentlyContinue
+            }
+            else
+            {
+                $manifest = $null
+            }
+
             if ( test-path -path $diagnosticsDir )
             {
                 foreach($dir in $testType)
                 {
-                    $testDir = "$diagnosticsDir\$dir"
-                    write-verbose -Message "SPECIFIC TEST: $testDir"
-                    if ( ! (test-path -path $testDir) ) 
+                    $testDir = Join-Path -Path $diagnosticsDir -ChildPath $dir
+                    write-verbose -Message "TEST DIR: $testDir"
+                    if ( ! (test-path -path $testDir) )
                     {
                         continue
                     }
                     foreach($file in get-childitem -path $testDir -filter *.tests.ps1)
                     {
-                        Write-Verbose -Message $file.fullname
-                        $testName = Get-TestFromScript -scriptPath $file.FullName
-                        new-OperationValidationInfo -FilePath $file.Fullname -File $file.Name -Type $dir -Name $testName -ModuleName $Module
+                        Write-Verbose -Message "PESTER TEST: $($file.fullname)"
+
+                        # Pull out parameters to Pester script if they exist
+                        $script = Get-Command -Name $file.fullname
+                        $parameters = $script.Parameters
+                        if ($parameters.Keys.Count -gt 0)
+                        {
+                            Write-Debug -Message 'Test script has overrideable parameters'
+                            Write-Debug -Message "`n$($parameters.Keys | Out-String)"
+                        }
+
+                        $testNames = @(Get-TestFromScript -scriptPath $file.FullName)
+                        foreach ($testName in $testNames) {
+                            $modInfoParams = @{
+                                FilePath = $file.Fullname
+                                File = $file.Name
+                                Type = $dir
+                                Name = $testName
+                                ModuleName =  $Module
+                                Version = if ($manifest.Version) { [version]$manifest.Version } else { $null }
+                                Parameters = $parameters
+                            }
+                            New-OperationValidationInfo @modInfoParams
+                        }
                     }
                 }
             }
@@ -276,12 +362,46 @@ Invoke the operational tests from modules
 .DESCRIPTION
 Modules which include Diagnostics tests are executed via this cmdlet
 
-.PARAMETER testFilePath
+.PARAMETER TestFilePath
 The path to a diagnostic test to execute. By default all discoverable diagnostics will be invoked
 
 .PARAMETER TestInfo
 The type of tests to invoke, this may be either "Simple", "Comprehensive"
 or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER ModuleName
+By default this is * which will retrieve and execute all OVF modules in $env:psmodulepath
+Additional module directories may be added. If you wish to check both
+$env:psmodulepath and your own specific locations, use
+*,<yourmodulepath>
+
+.PARAMETER TestType
+The type of tests to execute, this may be either "Simple", "Comprehensive"
+or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+
+.PARAMETER IncludePesterOutput
+Include the Pester output when execute the tests.
+
+.PARAMETER Version
+The version of the module to retrieve. If the specified, the latest version
+of the module will be retured.
+
+.PARAMETER Overrides
+If the Pester test(s) include script parameters, those parameters can be overridden by
+specifying a hashtable of values. The key(s) in the hashtable must match the parameter
+names in the Pester test.
+
+For example, if the Pester test includes a parameter block like the following, one or more of
+these parameters can be overriden using values from the hashtable passed to the -Overrides parameter.
+
+Pester test script:
+param(
+    [int]$SomeValue = 100
+    [bool]$ExtraChecks = $false
+)
+
+Overrides the default parameter values:
+Invoke-OperationValidation -ModuleName MyModule -Overrides @{ SomeValue = 500; ExtraChecks = $true }
 
 .EXAMPLE
 PS> Get-OperationValidation -ModuleName OperationValidation | Invoke-OperationValidation -IncludePesterOutput
@@ -319,16 +439,20 @@ function Invoke-OperationValidation
 {
     [CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="FileAndTest")]
     param (
-        [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$testFilePath,
+        [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$TestFilePath,
         [Parameter(ParameterSetName="FileAndTest",ValueFromPipeline=$true)][pscustomobject[]]$TestInfo,
         [Parameter(ParameterSetName="UseGetOperationTest")][string[]]$ModuleName = "*",
         [Parameter(ParameterSetName="UseGetOperationTest")]
         [ValidateSet("Simple","Comprehensive")][string[]]$TestType = @("Simple","Comprehensive"),
-        [Parameter()][switch]$IncludePesterOutput
+        [Parameter()][switch]$IncludePesterOutput,
+        [Parameter(ParameterSetName="UseGetOperationTest")]
+        [Parameter()][Version]$Version,
+        [Parameter(ParameterSetName="FileAndTest")]
+        [Parameter(ParameterSetName="UseGetOperationTest")]
+        [Parameter()][hashtable]$Overrides
         )
     BEGIN
     {
-        $quiet = ! $IncludePesterOutput
         if ( ! (get-module -Name Pester))
         {
             if ( get-module -list Pester )
@@ -340,25 +464,22 @@ function Invoke-OperationValidation
                 Throw "Cannot load Pester module"
             }
         }
-        # $resultCollection = @()
     }
     PROCESS
     {
         if ( $PSCmdlet.ParameterSetName -eq "UseGetOperationTest" )
         {
-            $tests = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType 
-            $tests | Invoke-OperationValidation -IncludePesterOutput:$IncludePesterOutput
-            return
-        }
-        
-        if ( ($testFilePath -eq $null) -and ($TestInfo -eq $null) )
-        {
-            Get-OperationValidation | Invoke-OperationValidation -IncludePesterOutput:$IncludePesterOutput
-            return
+            if ($PSBoundParameters.ContainsKey('Version'))
+            {
+                $TestInfo = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType -Version $Version
+            }
+            else
+            {
+                $TestInfo = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType
+            }
         }
 
-        
-        if ( $testInfo -ne $null )
+        if ( $null -ne $testInfo )
         {
             # first check to be sure all of the TestInfos are sane
             foreach($ti in $testinfo)
@@ -368,29 +489,90 @@ function Invoke-OperationValidation
                     throw "TestInfo must contain the path and the list of tests"
                 }
             }
-            
-            write-verbose -Message ("EXECUTING: {0} {1}" -f $ti.FilePath,($ti.Name -join ","))
-            foreach($tname in $ti.Name)
+
+            # first check to be sure all of the TestInfos are sane
+            foreach($ti in $testinfo)
             {
-                $testResult = Invoke-pester -Path $ti.FilePath -TestName $tName -quiet:$quiet -PassThru
-                Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
-                Convert-TestResult $testResult 
+                if ( ! ($ti.FilePath -and $ti.Name))
+                {
+                    throw "TestInfo must contain the path and the list of tests"
+                }
+            }
+
+            Write-Verbose -Message ("EXECUTING: {0} [{1}]" -f $ti.FilePath,($ti.Name -join ","))
+            foreach($ti in $testinfo)
+            {
+                $pesterParams = @{
+                    TestName = $ti.Name
+                    PassThru = $true
+                    Verbose = $false
+                }
+
+                # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
+                $pesterMod = Get-Module -Name Pester
+                if ($pesterMod.Version -ge '4.0.0')
+                {
+                    if ($IncludePesterOutput)
+                    {
+                        $pesterParams.Show = 'All'
+                    }
+                    else
+                    {
+                        $pesterParams.Show = 'None'
+                    }
+                }
+                else
+                {
+                    $pesterParams.Quiet = !$IncludePesterOutput
+                }
+
+                if ($ti.ScriptParameters)
+                {
+                    Write-Verbose -Message 'Test has script parameters'
+                    if ($PSBoundParameters.ContainsKey('Overrides'))
+                    {
+                        Write-Verbose -Message "Overriding with parameters:`n$($Overrides | Format-Table -Property Key, Value | Out-String)"
+                        $pesterParams.Script = @{
+                            Path = $ti.FilePath
+                            Parameters = $Overrides
+                        }
+                    }
+                    else
+                    {
+                        Write-Verbose -Message 'Using default parameters for test'
+                        $pesterParams.Path = $ti.FilePath
+                    }
+                }
+                else
+                {
+                    $pesterParams.Path = $ti.FilePath
+                }
+
+                if ( $PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]"))
+                {
+                    $testResult = Invoke-Pester @pesterParams
+                    if ($testResult)
+                    {
+                        Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
+                        Convert-TestResult $testResult
+                    }
+                }
             }
             return
         }
 
-        foreach($test in $testFilePath)
+        if ($TestFilePath)
         {
-            write-progress -Activity "Invoking tests in $test"
-            if ( $PSCmdlet.ShouldProcess($test))
-            {
-                $testResult = Invoke-Pester $test -passthru -quiet:$quiet
-                Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $test
-                Convert-TestResult $testResult
+            foreach($filePath in $TestFilePath) {
+                write-progress -Activity "Invoking tests in $filePath"
+                if ( $PSCmdlet.ShouldProcess($filePath)) {
+                    $testResult = Invoke-Pester $filePath -passthru -quiet:$quiet
+                    Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $filePath
+                    Convert-TestResult $testResult
+                }
             }
         }
     }
-
 }
 
 # emit an object which can be used in reporting

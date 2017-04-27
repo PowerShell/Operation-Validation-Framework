@@ -46,6 +46,17 @@
         </CustomItem>
        </Frame>
 
+       <Text>Version:  </Text>
+       <Frame>
+        <LeftIndent>4</LeftIndent>
+        <CustomItem>
+         <ExpressionBinding>
+          <PropertyName>Version</PropertyName>
+         </ExpressionBinding>
+         <NewLine/>
+        </CustomItem>
+       </Frame>
+
        <Text>Type:     </Text>
        <Frame>
         <LeftIndent>4</LeftIndent>
