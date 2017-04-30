@@ -49,7 +49,7 @@ Description = 'A set of tools for executing validation of the operation of a sys
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @('Pester')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -70,13 +70,13 @@ FormatsToProcess = @("OperationValidation.Format.ps1xml")
 FunctionsToExport = @('Get-OperationValidation','Invoke-OperationValidation')
 
 # Cmdlets to export from this module
-CmdletsToExport = '*'
+# CmdletsToExport = '*'
 
 # Variables to export from this module
-VariablesToExport = '*'
+# VariablesToExport = '*'
 
 # Aliases to export from this module
-AliasesToExport = '*'
+# AliasesToExport = '*'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
