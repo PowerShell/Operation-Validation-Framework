@@ -64,6 +64,8 @@ function new-OperationValidationInfo
 function Get-TestFromScript
 {
   param ( [string]$scriptPath )
+  
+  Write-Verbose -Message "$scriptPath"
 
   $errs = $null
   $tok = $null
@@ -82,7 +84,7 @@ function Get-TestFromScript
         return $command.CommandElements[$x + 1].value
       }
       #if we have a string without a parameter name, return first hit. Name parameter is at position 0.
-      ElseIf ($command.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $command.CommandElements[$x-1] -is [System.Management.Automation.Language.StringConstantExpressionAst])
+      ElseIf (($command.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst]) -and ($command.CommandElements[$x-1] -is [System.Management.Automation.Language.StringConstantExpressionAst]))
       {
         return $command.CommandElements[$x].value
       }
