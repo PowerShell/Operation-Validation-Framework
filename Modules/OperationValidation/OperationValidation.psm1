@@ -61,35 +61,35 @@ function new-OperationValidationInfo
     $o
 }
 # endregion
-
 function Get-TestFromScript
 {
-    param ( [string]$scriptPath )
-    $errs = $null
-    $tok =[System.Management.Automation.PSParser]::Tokenize((get-content -read 0 -Path $scriptPath), [ref]$Errs)
-    write-verbose -Message $scriptPath
+  param ( [string]$scriptPath )
 
-    for($i = 0; $i -lt $tok.count; $i++) {
-        if ( $tok[$i].type -eq "Command" -and $tok[$i].content -eq "Describe" ) 
-        {
-            $i++
-            if ( $tok[$i].Type -eq "String" ) { $tok[$i].Content }
-            else
-            {
-                # ok - we didn't get the describe text first, 
-                # we likely saw a "-Tags" statement, so that means that
-                # the describe text will immediately preceed the scriptblock
-                while($tok[$i].Type -ne "GroupStart")
-                {
-                    $i++
-                }
-                $i--
-                $tok[$i].Content
-            }
-        }
+  $errs = $null
+  $tok = $null
+  $AST = [System.Management.Automation.Language.Parser]::ParseInput((Get-Content -ReadCount 0 -Path $scriptPath),[ref]$tok, [ref]$errs)
+
+  #get all commandASTs, do not recurse through scriptblocks.
+  $commandAST = $AST.FindAll({$args[0] -as [System.Management.Automation.Language.CommandAst]},$false)
+  
+  foreach ($command in $commandAST)
+  {
+    for ($x = 0; $x -lt $command.CommandElements.Count; $x++) 
+    {
+      #Name parameter is named
+      if ($command.CommandElements[$x] -is [System.Management.Automation.Language.CommandParameterAst] -and $command.CommandElements[$x].ParameterName -eq 'Name')
+      {
+        return $command.CommandElements[$x + 1].value
+      }
+      #if we have a string without a parameter name, return first hit. Name parameter is at position 0.
+      ElseIf ($command.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst] -and $command.CommandElements[$x-1] -is [System.Management.Automation.Language.StringConstantExpressionAst])
+      {
+        return $command.CommandElements[$x].value
+      }
     }
-
+  }
 }
+
 <#
 .SYNOPSIS
 Retrieve the operational tests from modules
