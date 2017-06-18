@@ -1,6 +1,7 @@
 #Region ObjectHelpers
 function New-OperationValidationFailure
 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope='Function', Target='*')]
     param (
         [Parameter(Mandatory=$true)][string]$StackTrace,
         [Parameter(Mandatory=$true)][string]$FailureMessage
@@ -16,6 +17,7 @@ function New-OperationValidationFailure
 }
 function New-OperationValidationResult
 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope='Function', Target='*')]
     param (
         [Parameter(Mandatory=$true)][string]$Module,
         [Parameter(Mandatory=$true)][string]$FileName,
@@ -24,7 +26,7 @@ function New-OperationValidationResult
         [Parameter()][object]$RawResult,
         [Parameter()][object]$Error
     )
-    $o = new-object -TypeName pscustomobject
+    $o = New-Object -TypeName pscustomobject
     Add-Member -InputObject $o -MemberType NoteProperty -Name Module -Value $Module
     Add-Member -InputObject $o -MemberType NoteProperty -Name FileName -Value $FileName
     Add-Member -InputObject $o -MemberType NoteProperty -Name ShortName -Value ([io.path]::GetFileName($FileName))
@@ -37,15 +39,17 @@ function New-OperationValidationResult
     Add-Member -inputobject $o -membertype ScriptMethod -Name ToString -Value $toString -Force
     $o
 }
-function new-OperationValidationInfo
+function New-OperationValidationInfo
 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope='Function', Target='*')]
     param (
         [Parameter(Mandatory=$true)][string]$File,
         [Parameter(Mandatory=$true)][string]$FilePath,
         [Parameter(Mandatory=$true)][string[]]$Name,
         [Parameter()][string[]]$TestCases,
         [Parameter(Mandatory=$true)][ValidateSet("None","Simple","Comprehensive")][string]$Type,
-        [Parameter()][string]$modulename,
+        [Parameter()][string]$Modulename,
+        [Parameter()][string[]]$Tags,
         [Parameter()][Version]$Version,
         [Parameter()][hashtable]$Parameters
         )
@@ -55,7 +59,8 @@ function new-OperationValidationInfo
         Name = $Name
         TestCases = $testCases
         Type = $type
-        ModuleName = $modulename
+        ModuleName = $Modulename
+        Tags = $Tags
         Version = $Version
         ScriptParameters = $Parameters
     }
@@ -68,31 +73,53 @@ function new-OperationValidationInfo
 
 function Get-TestFromScript
 {
-    param ( [string]$scriptPath )
-    $errs = $null
-    $tok =[System.Management.Automation.PSParser]::Tokenize((get-content -read 0 -Path $scriptPath), [ref]$Errs)
+    param (
+        [parameter(Mandatory)]
+        [string]$ScriptPath
+    )
 
-    for($i = 0; $i -lt $tok.count; $i++) {
-        if ( $tok[$i].type -eq "Command" -and $tok[$i].content -eq "Describe" )
-        {
-            $i++
-            if ( $tok[$i].Type -eq "String" ) { $tok[$i].Content }
-            else
-            {
-                # ok - we didn't get the describe text first,
-                # we likely saw a "-Tags" statement, so that means that
-                # the describe text will immediately preceed the scriptblock
-                while($tok[$i].Type -ne "GroupStart")
-                {
-                    $i++
-                }
-                $i--
-                $tok[$i].Content
+    $text = Get-Content -Path $ScriptPath -Raw
+    $tokens = $null
+    $errors = $null
+    $describes = [Management.Automation.Language.Parser]::ParseInput($text, [ref]$tokens, [ref]$errors).
+       FindAll([Func[Management.Automation.Language.Ast,bool]]{
+            param ($ast)
+            $ast.CommandElements -and
+            $ast.CommandElements[0].Value -eq 'describe'
+        }, $true) |
+        ForEach-Object {
+            # This is the name of the 'describe' block
+            $describeName = ($_.CommandElements | Where-Object { $_.StaticType.name -eq 'string' })[1].SafeGetValue()
+
+            $item = [PSCustomObject][ordered]@{
+                Name = $describeName
+                Tags = @()
             }
-        }
-    }
 
+            # Get any tags defined
+            $tagIndex = $_.CommandElements.IndexOf(($_.CommandElements | Where-Object ParameterName -eq 'Tag')) + 1
+            if ($tagIndex -and $tagIndex -lt $_.CommandElements.Count) {
+                $tagExtent = $_.CommandElements[$tagIndex].Extent
+
+                $tagAST = [System.Management.Automation.Language.Parser]::ParseInput($tagExtent, [ref]$null, [ref]$null)
+
+                # Try to get the tags as an array
+                $tagElements = $tagAST.FindAll({$args[0] -is [System.Management.Automation.Language.ArrayLiteralAst]}, $true)
+                if ($tagElements) {
+                    $item.Tags = $tagElements.SafeGetValue()
+                } else {
+                    # Try to get the tag as a string
+                    $tagElements = $tagAST.FindAll({$args[0] -is [System.Management.Automation.Language.StringConstantExpressionAst]}, $true)
+                    if ($tagElements) {
+                        $item.Tags = @($tagElements.SafeGetValue())
+                    }
+                }
+            }
+            $item
+        }
+    $describes
 }
+
 <#
 .SYNOPSIS
 Retrieve the operational tests from modules
@@ -144,6 +171,19 @@ PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
         Comprehensive Subtracting Tests
         Comprehensive Examples
 
+.PARAMETER Tag
+Executes tests with specified tag parameter values. Wildcard characters and tag values that include spaces
+or whitespace characters are not supported.
+
+When you specify multiple tag values, Get-OperationValidation executes tests that have any of the
+listed tags. If you use both Tag and ExcludeTag, ExcludeTag takes precedence.
+
+.PARAMETER ExcludeTag
+Omits tests with the specified tag parameter values. Wildcard characters and tag values that include spaces
+or whitespace characters are not supported.
+
+When you specify multiple ExcludeTag values, Get-OperationValidation omits tests that have any
+of the listed tags. If you use both Tag and ExcludeTag, ExcludeTag takes precedence.
 .LINK
 Invoke-OperationValidation
 
@@ -154,12 +194,13 @@ function Get-OperationValidation
 param (
     [Parameter(Position=0)][string[]]$ModuleName = "*",
     [Parameter()][ValidateSet("Simple","Comprehensive")][string[]]$TestType =  @("Simple","Comprehensive"),
-    [Parameter()][Version]$Version
-    )
+    [Parameter()][Version]$Version,
+    [Parameter()][string[]]$Tag,
+    [Parameter()][string[]]$ExcludeTag
+)
 
     BEGIN
     {
-
         #$testTypes = $type.Tostring().Replace(" ","").split(",")
         function Get-TestName ( $ast )
         {
@@ -213,26 +254,30 @@ param (
             )
             foreach($p in $env:psmodulepath.split(";"))
             {
-                if ( test-path -path $p )
+                if ( Test-Path -Path $p )
                 {
-                    foreach($modDir in get-childitem -path $p -directory)
+                    foreach($modDir in Get-ChildItem -Path $p -Directory)
                     {
                         foreach ($n in $name )
                         {
                             if ( $modDir.Name -like $n )
                             {
                                 # now determine if there's a diagnostics directory, or a version
-                                if ( test-path -path ($modDir.FullName + "\Diagnostics"))
+                                if ( Test-Path -Path (Join-Path -Path $modDir.FullName -ChildPath 'Diagnostics'))
                                 {
                                     # Did we specify a specific version to find?
                                     if ($PSBoundParameters.ContainsKey('Version'))
                                     {
                                         $manifestFile = Get-ChildItem -Path $modDir.FullName -Filter "$($modDir.Name).psd1" | Select-Object -First 1
-                                        $manifest = Test-ModuleManifest -Path $manifestFile.FullName
-                                        if ($manifest.Version -eq $Version)
+                                        if ($manifestFile -and (Test-Path -Path $manifestFile.FullName))
                                         {
-                                            $modDir.FullName
-                                            break
+                                            Write-Verbose $manifestFile
+                                            $manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false
+                                            if ($manifest.Version -eq $Version)
+                                            {
+                                                $modDir.FullName
+                                                break
+                                            }
                                         }
                                     }
                                     else
@@ -245,21 +290,21 @@ param (
                                 # Get latest version if no specific version specified
                                 if ($PSBoundParameters.ContainsKey('Version'))
                                 {
-                                    $versionDirectories = Get-Childitem -path $modDir.FullName -dir |
-                                        where-object { $_.name -as [version] -and $_.Name -eq $Version }
+                                    $versionDirectories = Get-Childitem -Path $modDir.FullName -Directory |
+                                        Where-Object { $_.name -as [version] -and $_.Name -eq $Version }
                                 }
                                 else
                                 {
-                                    $versionDirectories = Get-Childitem -path $modDir.FullName -dir |
-                                        where-object { $_.name -as [version] }
+                                    $versionDirectories = Get-Childitem -Path $modDir.FullName -Directory |
+                                        Where-Object { $_.name -as [version] }
                                 }
 
-                                $potentialDiagnostics = $versionDirectories | where-object {
-                                    test-path ($_.fullname + "\Diagnostics")
+                                $potentialDiagnostics = $versionDirectories | Where-Object {
+                                    Test-Path -Path (Join-Path -Path $_.FullName -ChildPath 'Diagnostics')
                                 }
-                                # now select the most recent module path which has diagnostics
+                                # Now select the most recent module path which has diagnostics
                                 $DiagnosticDir = $potentialDiagnostics |
-                                    sort-object {$_.name -as [version]} |
+                                    Sort-Object {$_.name -as [version]} |
                                     Select-Object -Last 1
                                 if ( $DiagnosticDir )
                                 {
@@ -275,31 +320,32 @@ param (
     }
     PROCESS
     {
-        Write-Progress -Activity "Inspecting Modules" -Status " "
+        Write-Progress -Activity 'Inspecting Modules' -Status ' '
         if ($PSBoundParameters.ContainsKey('Version'))
         {
-            $moduleCollection = Get-ModuleList -Name $ModuleName -Version $Version
+            $moduleCollection = @(Get-ModuleList -Name $ModuleName -Version $Version)
         }
         else
         {
-            $moduleCollection = Get-ModuleList -Name $ModuleName
+            $moduleCollection = @(Get-ModuleList -Name $ModuleName)
         }
 
-        $count = 1;
-        $moduleCount = @($moduleCollection).Count
-        foreach($module in $moduleCollection)
+        $count = 1
+        $moduleCount = $moduleCollection.Count
+        Write-Debug -Message "Found [$moduleCount] OVF modules"
+        foreach($modulePath in $moduleCollection)
         {
-            Write-Progress -Activity ("Searching for Diagnostics in " + $module) -PercentComplete ($count++/$moduleCount*100) -status " "
-            $diagnosticsDir = "$module\Diagnostics"
+            Write-Progress -Activity ("Searching for Diagnostics in $modulePath") -PercentComplete ($count++/$moduleCount*100) -status ' '
+            $diagnosticsDir = Join-Path -Path $modulePath -ChildPath 'Diagnostics'
 
             # Get the module manifest so we can pull out the version
-            $moduleName = Split-Path -Path $module -Leaf
-            $manifestFile = Get-ChildItem -Path $module -Filter "$($moduleName).psd1"
+            $moduleName = Split-Path -Path $modulePath -Leaf
+            $manifestFile = Get-ChildItem -Path $modulePath -Filter "$($moduleName).psd1"
             if (-not $manifestFile) {
                 if ("$moduleName" -as [version]) {
                     # We are in a "version" directory so get the actual module name from the parent directory
-                    $parent = Split-Path -Path (Split-Path -Path $module -Parent) -Leaf
-                    $manifestFile = Get-ChildItem -Path $module -Filter "$($parent).psd1"
+                    $parent = Split-Path -Path (Split-Path -Path $modulePath -Parent) -Leaf
+                    $manifestFile = Get-ChildItem -Path $modulePath -Filter "$($parent).psd1"
                 }
             }
 
@@ -317,15 +363,12 @@ param (
                 foreach($dir in $testType)
                 {
                     $testDir = Join-Path -Path $diagnosticsDir -ChildPath $dir
-                    write-verbose -Message "TEST DIR: $testDir"
-                    if ( ! (test-path -path $testDir) )
+                    if (-not (Test-Path -Path $testDir))
                     {
                         continue
                     }
-                    foreach($file in get-childitem -path $testDir -filter *.tests.ps1)
+                    foreach($file in (Get-ChildItem -Path $testDir -Filter *.tests.ps1))
                     {
-                        Write-Verbose -Message "PESTER TEST: $($file.fullname)"
-
                         # Pull out parameters to Pester script if they exist
                         $script = Get-Command -Name $file.fullname
                         $parameters = $script.Parameters
@@ -335,14 +378,20 @@ param (
                             Write-Debug -Message "`n$($parameters.Keys | Out-String)"
                         }
 
-                        $testNames = @(Get-TestFromScript -scriptPath $file.FullName)
-                        foreach ($testName in $testNames) {
+                        $tests = @(Get-TestFromScript -ScriptPath $file.FullName)
+                        foreach ($test in $tests)
+                        {
+                            # Only return tests that match the tag filter(s)
+                            if ($Tag -and @(Compare-Object -ReferenceObject $Tag -DifferenceObject $test.Tags -IncludeEqual -ExcludeDifferent).count -eq 0) { continue }
+                            if ($ExcludeTag -and @(Compare-Object -ReferenceObject $ExcludeTag -DifferenceObject $test.Tags -IncludeEqual -ExcludeDifferent).count -gt 0) { continue }
+
                             $modInfoParams = @{
                                 FilePath = $file.Fullname
                                 File = $file.Name
                                 Type = $dir
-                                Name = $testName
-                                ModuleName =  $Module
+                                Name = $test.Name
+                                ModuleName =  $modulePath
+                                Tags = $test.Tags
                                 Version = if ($manifest.Version) { [version]$manifest.Version } else { $null }
                                 Parameters = $parameters
                             }
@@ -403,6 +452,20 @@ param(
 Overrides the default parameter values:
 Invoke-OperationValidation -ModuleName MyModule -Overrides @{ SomeValue = 500; ExtraChecks = $true }
 
+.PARAMETER Tag
+Executes tests with specified tag parameter values. Wildcard characters and tag values that include spaces
+or whitespace characters are not supported.
+
+When you specify multiple tag values, Invoke-OperationValidation executes tests that have any of the
+listed tags. If you use both Tag and ExcludeTag, ExcludeTag takes precedence.
+
+.PARAMETER ExcludeTag
+Omits tests with the specified tag parameter values. Wildcard characters and tag values that include spaces
+or whitespace characters are not supported.
+
+When you specify multiple ExcludeTag values, Get-OperationValidation omits tests that have any
+of the listed tags. If you use both Tag and ExcludeTag, ExcludeTag takes precedence.
+
 .EXAMPLE
 PS> Get-OperationValidation -ModuleName OperationValidation | Invoke-OperationValidation -IncludePesterOutput
 Describing Simple Test Suite
@@ -449,15 +512,19 @@ function Invoke-OperationValidation
         [Parameter()][Version]$Version,
         [Parameter(ParameterSetName="FileAndTest")]
         [Parameter(ParameterSetName="UseGetOperationTest")]
-        [Parameter()][hashtable]$Overrides
+        [Parameter()][hashtable]$Overrides,
+        [Parameter(ParameterSetName="UseGetOperationTest")]
+        [Parameter()][string[]]$Tag,
+        [Parameter(ParameterSetName="UseGetOperationTest")]
+        [Parameter()][string[]]$ExcludeTag
         )
     BEGIN
     {
-        if ( ! (get-module -Name Pester))
+        if ( -not (Get-Module -Name Pester))
         {
-            if ( get-module -list Pester )
+            if ( Get-Module -Name Pester -ListAvailable)
             {
-                import-module -Name Pester
+                Import-Module -Name Pester -Verbose:$false
             }
             else
             {
@@ -469,14 +536,24 @@ function Invoke-OperationValidation
     {
         if ( $PSCmdlet.ParameterSetName -eq "UseGetOperationTest" )
         {
+            $getOvfParams = @{
+                ModuleName = $ModuleName
+                TestType = $TestType
+            }
             if ($PSBoundParameters.ContainsKey('Version'))
             {
-                $TestInfo = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType -Version $Version
+                $getOvfParams.Version = $Version
             }
-            else
+            if ($PSBoundParameters.ContainsKey('Tag'))
             {
-                $TestInfo = Get-OperationValidation -ModuleName $ModuleName -TestType $TestType
+                $getOvfParams.Tag = $Tag
             }
+            if ($PSBoundParameters.ContainsKey('ExcludeTag'))
+            {
+                $getOvfParams.ExcludeTag = $ExcludeTag
+            }
+
+            $testInfo = Get-OperationValidation @getOvfParams
         }
 
         if ( $null -ne $testInfo )
@@ -528,7 +605,7 @@ function Invoke-OperationValidation
 
                 if ($ti.ScriptParameters)
                 {
-                    Write-Verbose -Message 'Test has script parameters'
+                    Write-Debug -Message 'Test has script parameters'
                     if ($PSBoundParameters.ContainsKey('Overrides'))
                     {
                         Write-Verbose -Message "Overriding with parameters:`n$($Overrides | Format-Table -Property Key, Value | Out-String)"
@@ -539,7 +616,7 @@ function Invoke-OperationValidation
                     }
                     else
                     {
-                        Write-Verbose -Message 'Using default parameters for test'
+                        Write-Debug -Message 'Using default parameters for test'
                         $pesterParams.Path = $ti.FilePath
                     }
                 }
@@ -548,13 +625,23 @@ function Invoke-OperationValidation
                     $pesterParams.Path = $ti.FilePath
                 }
 
+                if ($PSBoundParameters.ContainsKey('Tag'))
+                {
+                    $pesterParams.Tag = $Tag
+                }
+
+                if ($PSBoundParameters.ContainsKey('ExcludeTag'))
+                {
+                    $pesterParams.ExcludeTag = $ExcludeTag
+                }
+
                 if ( $PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]"))
                 {
                     $testResult = Invoke-Pester @pesterParams
                     if ($testResult)
                     {
                         Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
-                        Convert-TestResult $testResult
+                        Convert-TestResult -Result $testResult -ModuleName $ModuleName
                     }
                 }
             }
@@ -568,7 +655,7 @@ function Invoke-OperationValidation
                 if ( $PSCmdlet.ShouldProcess($filePath)) {
                     $testResult = Invoke-Pester $filePath -passthru -quiet:$quiet
                     Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $filePath
-                    Convert-TestResult $testResult
+                    Convert-TestResult -Result $testResult
                 }
             }
         }
@@ -591,5 +678,4 @@ Function Convert-TestResult
         $TestName = "{0}:{1}:{2}" -f $testResult.Describe,$testResult.Context,$testResult.Name
         New-OperationValidationResult -Module $Module -Name $TestName -FileName $result.path -Result $testresult.result -RawResult $testResult -Error $TestError
     }
-
 }

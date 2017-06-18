@@ -4,7 +4,7 @@ param(
 )
 
 
-Describe 'Simple Validation of PSGallery' {
+Describe 'Simple Validation of PSGallery' -Tag 'AAABBBCCC' {
     It 'The PowerShell Gallery should be responsive' {
         $request = [System.Net.WebRequest]::Create($WebsiteUrl)
         $response = $Request.GetResponse()
