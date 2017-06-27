@@ -1,5 +1,9 @@
+
 # Operation-Validation-Framework
-A set of tools for executing validation of the operation of a system. 
+
+[![Build status](https://ci.appveyor.com/api/projects/status/rili6ki88ioyq23t?svg=true)](https://ci.appveyor.com/project/devblackops/operation-validation-framework)
+
+A set of tools for executing validation of the operation of a system.
 It provides a way to organize and execute Pester tests which are written
 to validate operation (rather than limited feature tests)
 
@@ -11,8 +15,8 @@ test names in those files will be returned.
 
 The module structure required is as follows:
 
-* ModuleBase\  
-   * Diagnostics\  
+* ModuleBase\
+   * Diagnostics\
       * Simple         *simple tests are held in this location  (e.g., ping, serviceendpoint checks)*
       * Comprehensive  *comprehensive scenario tests should be placed here*
 
@@ -27,7 +31,7 @@ Get-OperationValidation           Function  Retrieve the operational tests from 
 Invoke-OperationValidation        Function  Invoke the operational tests from modules
 ```
 
-## Examples 
+## Examples
 ```
     PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
 
