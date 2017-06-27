@@ -107,13 +107,13 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @()
+        Tags = @('Operation', 'Validation', 'Infrastructure', 'Testing', 'Pester', 'OVF')
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://raw.githubusercontent.com/PowerShell/Operation-Validation-Framework/master/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/PowerShell/Operation-Validation-Framework'
 
         # A URL to an icon representing this module.
         # IconUri = ''
