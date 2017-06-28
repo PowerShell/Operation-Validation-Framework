@@ -38,6 +38,12 @@ Describe "OperationValidation Module Tests" {
         It "TestType parameter is proper type" {
             $commands[0].Parameters['TestType'].ParameterType | Should be ([System.String[]])
         }
+        It "Tag parameter is property type" {
+            $commands[0].Parameters['Tag'].ParameterType | Should be ([System.String[]])
+        }
+        It "ExcludeTag parameter is property type" {
+            $commands[0].Parameters['Tag'].ParameterType | Should be ([System.String[]])
+        }
         It "TestType parameter has proper constraints" {
             $Commands[0].Parameters['TestType'].Attributes.ValidValues.Count | should be 2
             $Commands[0].Parameters['TestType'].Attributes.ValidValues -eq "Simple" | Should be "Simple"
@@ -66,6 +72,12 @@ Describe "OperationValidation Module Tests" {
         It "TestType parameter is proper type" {
             $commands[1].Parameters['TestType'].ParameterType | Should be ([System.String[]])
         }
+        It "Tag parameter is proper type" {
+            $commands[1].Parameters['Tag'].ParameterType | Should be ([System.String[]])
+        }
+        It "ExcludeTag parameter is proper type" {
+            $commands[1].Parameters['ExcludeTag'].ParameterType | Should be ([System.String[]])
+        }
         It "TestType parameter has proper constraints" {
             $Commands[1].Parameters['TestType'].Attributes.ValidValues.Count | should be 2
             $Commands[1].Parameters['TestType'].Attributes.ValidValues -eq "Simple" | Should be "Simple"
@@ -74,7 +86,7 @@ Describe "OperationValidation Module Tests" {
     }
     Context "Get-OperationValidation finds proper tests" {
         It "Can find its own tests" {
-            $tests = Get-OperationValidation -modulename OperationValidation
+            $tests = Get-OperationValidation -Modulename OperationValidation
 
             $tests.Count | Should be 2
             $tests.File -eq "PSGallery.Simple.Tests.ps1" | Should be "PSGallery.Simple.Tests.ps1"
@@ -91,7 +103,7 @@ Describe "OperationValidation Module Tests" {
             $v1Tests.File | Should be 'PSGallery.Simple.Tests.ps1'
 
             $v2Tests = @(Get-OperationValidation -ModuleName 'VersionedModule' -Version '2.0.0')
-            $v2Tests.Count | Should be 2
+            $v2Tests.Count | Should be 3
             $v2Tests[0].File | Should be 'PSGallery.Simple.Tests.ps1'
             $v2Tests[1].File | Should be 'PSGallery.Simple.Tests.ps1'
         }
@@ -100,11 +112,36 @@ Describe "OperationValidation Module Tests" {
             $tests[0].Version | Should be ([Version]'2.0.0')
             $tests[1].Version | Should be ([Version]'2.0.0')
         }
+        It "Can get tests with a tag" {
+            $tests = Get-OperationValidation -Tag 'AAABBBCCC'
+            $tests.Count | should be 2
+            $tests[0].Tags[0] | Should be 'AAABBBCCC'
+            $tests[1].Tags[0] | Should be 'AAABBBCCC'
+            $tests[0].Name | Should be 'Simple Validation of PSGallery'
+            $tests[1].Name | Should be 'Simple Validation of Microsoft'
+        }
+        It "Can get tests with multiple tags" {
+            $tests = Get-OperationValidation -Tag 'AAABBBCCC', 'XXXYYYZZZ'
+            $tests.Count | Should be 2
+            @($tests | Where-Object {'AAABBBCCC' -in $_.Tags}).Count | Should be 2
+            @($tests | Where-Object {'XXXYYYZZZ' -in $_.Tags}).Count | Should be 1
+        }
+        It "Can exclude modules with a tag" {
+            $tests = Get-OperationValidation -ExcludeTag 'AAABBBCCC'
+            $myTest = $tests | Where-Object {$_.Tags -Contains 'AAABBBCCC'}
+            $myTest | Should BeNullOrEmpty
+        }
+        It "Can exclude modules with multiple tags" {
+            $tests = Get-OperationValidation -ExcludeTag 'AAABBBCCC', 'XXXYYYZZZ'
+            $myTest = $tests | Where-Object {('AAABBBCCC' -in $_.Tags) -or ('XXXYYYZZZ' -in $_.Tags)}
+            $myTest | Should BeNullOrEmpty
+        }
         It "Formats the output appropriately" {
-            $output = Get-OperationValidation -modulename OperationValidation | out-string -str -width 210|?{$_}
+            $output = Get-OperationValidation -Modulename OperationValidation | Out-String -Stream -Width 210 | Where-Object {$_}
             $expected = ".*Module:   .*OperationValidation",
                         "Version:  *"
                         "Type:     Simple",
+                        "Tags:     {}",
                         "File:     PSGallery.Simple.Tests.ps1",
                         "FilePath: .*PSGallery.Simple.Tests.ps1",
                         "Name:",
@@ -112,11 +149,12 @@ Describe "OperationValidation Module Tests" {
                         ""
                         "Module:   .*OperationValidation",
                         "Type:     Comprehensive",
+                        "Tags:     {}",
                         "File:     PSGallery.Comprehensive.Tests.ps1",
                         "FilePath: .*PSGallery.Comprehensive.Tests.ps1",
                         "Name:",
-                        "E2E validation of PSGallery"
-            for($i = 0; $i -lt $expected.Count;$i++)
+                        "    E2E validation of PSGallery"
+            for($i = 0; $i -lt $expected.Count; $i++)
             {
                 $output[$i] | Should match $expected[$i]
             }
@@ -136,6 +174,22 @@ Describe "OperationValidation Module Tests" {
             $results = $tests | Invoke-OperationValidation -Overrides @{ WebsiteUrl = 'http://www.microsoft.com'}
             $results[0].Result | Should be 'Passed'
             $results[1].Result | Should be 'Failed'
+        }
+    }
+
+    Context "Invoke-OperationValidation runs tests based on tags" {
+        It "Can run tests with certain tag" {
+            $results = Invoke-OperationValidation -Tag 'AAABBBCCC'
+            $results[0].Result | Should be 'Passed'
+            $results[1].Result | Should be 'Passed'
+        }
+
+        It "Can run tests excluding a tag" {
+            $results = Invoke-OperationValidation -Modulename VersionedModule -ExcludeTag 'AAABBBCCC'
+            $results.Result | Should be 'Passed'
+
+            $results = Invoke-OperationValidation -Modulename VersionedModule -ExcludeTag 'XXXYYYZZZ'
+            $results.Count | Should be 2
         }
     }
 }
