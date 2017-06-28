@@ -24,7 +24,7 @@
      </TableRowEntries>
     </TableControl>
    </View>
-
+ 
   <View>
    <Name>OperationValidation</Name>
    <ViewSelectedBy>
@@ -46,17 +46,6 @@
         </CustomItem>
        </Frame>
 
-       <Text>Version:  </Text>
-       <Frame>
-        <LeftIndent>4</LeftIndent>
-        <CustomItem>
-         <ExpressionBinding>
-          <PropertyName>Version</PropertyName>
-         </ExpressionBinding>
-         <NewLine/>
-        </CustomItem>
-       </Frame>
-
        <Text>Type:     </Text>
        <Frame>
         <LeftIndent>4</LeftIndent>
@@ -68,17 +57,6 @@
         </CustomItem>
        </Frame>
 
-       <Text>Tags:     </Text>
-         <Frame>
-           <LeftIndent>4</LeftIndent>
-           <CustomItem>
-             <ExpressionBinding>
-              <PropertyName>Tags</PropertyName>
-             </ExpressionBinding>
-           <NewLine/>
-          </CustomItem>
-         </Frame>
-
        <Text>File:     </Text>
        <Frame>
         <LeftIndent>4</LeftIndent>
@@ -89,7 +67,7 @@
          <NewLine/>
         </CustomItem>
        </Frame>
-
+       
        <Text>FilePath: </Text>
        <Frame>
         <LeftIndent>4</LeftIndent>
