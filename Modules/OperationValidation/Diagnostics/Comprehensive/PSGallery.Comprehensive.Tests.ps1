@@ -1,4 +1,4 @@
-Describe "E2E validation of PSGallery" {
+Describe -Name "E2E validation of PSGallery" -Fixture {
     BeforeAll {
         $Repository = "InternalPSGallery"
         $ModuleName = "FormatTools"
