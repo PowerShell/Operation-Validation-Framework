@@ -1,4 +1,4 @@
-Describe "E2E validation of PSGallery" {
+Describe "E2E validation of PSGallery" -Fixture {
     BeforeAll {
         $Repository = "InternalPSGallery"
         $ModuleName = "FormatTools"
@@ -8,7 +8,7 @@ Describe "E2E validation of PSGallery" {
         {
             # the module is already installed
             $PSDefaultParameterValues["It:skip"] = $true
-        } 
+        }
     }
 
     It "should return the same number of modules via cmdlets and website" {
