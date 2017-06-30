@@ -89,8 +89,19 @@ function Get-TestFromScript
         }, $true) |
         ForEach-Object {
             # This is the name of the 'describe' block
-            $describeName = ($_.CommandElements | Where-Object { $_.StaticType.name -eq 'string' })[1].SafeGetValue()
-
+                for ($x = 0; $x -lt $_.CommandElements.Count; $x++)
+                {
+                    #Name parameter is named
+                    if ($_.CommandElements[$x] -is [System.Management.Automation.Language.CommandParameterAst] -and $_.CommandElements[$x].ParameterName -eq 'Name')
+                    {
+                        $describeName = $_.CommandElements[$x + 1].value
+                    }
+                    #if we have a string without a parameter name, return first hit. Name parameter is at position 0.
+                    ElseIf (($_.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst]) -and ($_.CommandElements[$x - 1] -is [System.Management.Automation.Language.StringConstantExpressionAst]))
+                    {
+                        $describeName = $_.CommandElements[$x].value
+                    }
+                }
             $item = [PSCustomObject][ordered]@{
                 Name = $describeName
                 Tags = @()
