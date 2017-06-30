@@ -8,6 +8,9 @@ properties {
     $sut = $env:BHModulePath
     $tests = Join-Path -Path $projectRoot -ChildPath 'Tests'
     $outputDir = Join-Path -Path $projectRoot -ChildPath 'out'
+    if (-not (Test-Path -Path $outputDir)) {
+        New-Item -Path $outputDir -ItemType Directory
+    }
     $manifest = Import-PowerShellDataFile -Path $env:BHPSModuleManifest
 }
 
