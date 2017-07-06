@@ -6,7 +6,7 @@ function Get-OperationValidation {
 
     .DESCRIPTION
     Modules which include a Diagnostics directory are inspected for
-    Pester tests in either the "Simple" or "Comprehensive" directories.
+    Pester tests in either the "Simple" or "Comprehensive" subdirectories.
     If files are found in those directories, they will be inspected to determine
     whether they are Pester tests. If Pester tests are found, the
     test names in those files will be returned.
@@ -19,37 +19,28 @@ function Get-OperationValidation {
                             (e.g., ping, serviceendpoint checks)
             Comprehensive  # comprehensive scenario tests should be placed here
 
-    .PARAMETER ModuleName
-    By default this is * which will retrieve all modules in $env:psmodulepath
-    Additional module directories may be added. If you wish to check both
-    $env:psmodulepath and your own specific locations, use
-    *,<yourmodulepath>
+    .PARAMETER Name
+    One or more module names to inspect and return if they adhere to the OVF Pester test structure.
+
+    By default this is [*] which will inspect all modules in $env:PSModulePath.
+
+    .PARAMETER Path
+    One or more paths to search for OVF modules in. This bypasses searching the directories contained in $env:PSModulePath.
+
+    .PARAMETER LiteralPath
+    One or more literal paths to search for OVF modules in. This bypasses searching the directories contained in $env:PSModulePath.
+
+    Unlike the Path parameter, the value of LiteralPath is used exactly as it is typed.
+    No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation
+    marks tell PowerShell not to interpret any characters as escape sequences.
 
     .PARAMETER TestType
-    The type of tests to retrieve, this may be either "Simple", "Comprehensive"
-    or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
+    The type of tests to retrieve, this may be either "Simple", "Comprehensive", or Both ("Simple,Comprehensive").
+    "Simple, Comprehensive" is the default.
 
     .PARAMETER Version
-    The version of the module to retrieve. If the specified, the latest version
+    The version of the module to retrieve. If not specified, the latest version
     of the module will be retured.
-
-    .EXAMPLE
-    PS> Get-OperationValidation -ModuleName C:\temp\modules\AddNumbers
-
-        Type:         Simple
-        File:     addnum.tests.ps1
-        FilePath: C:\temp\modules\AddNumbers\Diagnostics\Simple\addnum.tests.ps1
-        Name:
-            Add-Em
-            Subtract em
-            Add-Numbers
-        Type:         Comprehensive
-        File:     Comp.Adding.Tests.ps1
-        FilePath: C:\temp\modules\AddNumbers\Diagnostics\Comprehensive\Comp.Adding.Tests.ps1
-        Name:
-            Comprehensive Adding Tests
-            Comprehensive Subtracting Tests
-            Comprehensive Examples
 
     .PARAMETER Tag
     Executes tests with specified tag parameter values. Wildcard characters and tag values that include spaces
@@ -64,29 +55,150 @@ function Get-OperationValidation {
 
     When you specify multiple ExcludeTag values, Get-OperationValidation omits tests that have any
     of the listed tags. If you use both Tag and ExcludeTag, ExcludeTag takes precedence.
+
+    .EXAMPLE
+    PS> Get-OperationValidation -Name OVF.Windows.Server
+
+        Module:   C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2
+        Version:  1.0.2
+        Type:     Simple
+        Tags:     {}
+        File:     LogicalDisk.tests.ps1
+        FilePath: C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2\Diagnostics\Simple\LogicalDisk.tests.ps1
+        Name:
+            Logical Disks
+
+
+        Module:   C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2
+        Version:  1.0.2
+        Type:     Simple
+        Tags:     {}
+        File:     Memory.tests.ps1
+        FilePath: C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2\Diagnostics\Simple\Memory.tests.ps1
+        Name:
+            Memory
+
+
+        Module:   C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2
+        Version:  1.0.2
+        Type:     Simple
+        Tags:     {}
+        File:     Network.tests.ps1
+        FilePath: C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2\Diagnostics\Simple\Network.tests.ps1
+        Name:
+            Network Adapters
+
+
+        Module:   C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2
+        Version:  1.0.2
+        Type:     Simple
+        Tags:     {}
+        File:     Services.tests.ps1
+        FilePath: C:\Program Files\WindowsPowerShell\Modules\OVF.Windows.Server\1.0.2\Diagnostics\Simple\Services.tests.ps1
+        Name:
+            Operating System
+
+    .EXAMPLE
+    PS> $tests = Get-OperationValidation
+
+    Search in all modules found in $env:PSModulePath for OVF tests.
+
+    .EXAMPLE
+    PS> $tests = Get-OperationValidation -Path C:\MyTests
+
+    Search for OVF modules under c:\MyTests
+
+    .EXAMPLE
+    PS> $simpleTests = Get-OperationValidation -ModuleName OVF.Windows.Server -TypeType Simple
+
+    Get just the simple tests in the OVF.Windows.Server module.
+
+    .EXAMPLE
+    $tests = Get-OperationValidation -ModuleName OVF.Windows.Server -Version 1.0.2
+
+    Get all the tests from version 1.0.2 of the OVF.Windows.Server module.
+
+    .EXAMPLE
+    $storageTests = Get-OperationValidation -Tag Storage
+
+    Search in all modules for OVF tests that include the tag Storage.
+
+    .EXAMPLE
+    $tests = Get-OperationValidation -ExcludeTag memory
+
+    Search for OVF tests that don't include the tag Memory
+
     .LINK
     Invoke-OperationValidation
 
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'ModuleName')]
     param (
-        [Parameter(Position=0)][string[]]$ModuleName = "*",
-        [Parameter()][ValidateSet("Simple","Comprehensive")][string[]]$TestType =  @("Simple","Comprehensive"),
-        [Parameter()][Version]$Version,
-        [Parameter()][string[]]$Tag,
-        [Parameter()][string[]]$ExcludeTag
+        [Parameter(Position = 0, ParameterSetName = 'ModuleName')]
+        [Alias('ModuleName')]
+        [string[]]$Name = '*',
+
+        [parameter(
+            Mandatory,
+            ParameterSetName  = 'Path',
+            Position = 0,
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Path,
+
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'LiteralPath',
+            Position = 0,
+            ValueFromPipelineByPropertyName
+        )]
+        [ValidateNotNullOrEmpty()]
+        [Alias('PSPath')]
+        [string[]]$LiteralPath,
+
+        [ValidateSet('Simple', 'Comprehensive')]
+        [string[]]$TestType =  @('Simple', 'Comprehensive'),
+
+        [Version]$Version,
+
+        [string[]]$Tag,
+
+        [string[]]$ExcludeTag
     )
 
     PROCESS {
         Write-Progress -Activity 'Inspecting Modules' -Status ' '
+
+        # Resolve module list either by module name, path, or literalpath
+        $modListParams = @{}
+        switch ($PSCmdlet.ParameterSetName)
+        {
+            'ModuleName'
+            {
+                $modListParams.Name = $Name
+                break
+            }
+            'Path'
+            {
+                $paths = Resolve-Path -Path $Path | Select-Object -ExpandProperty Path
+                $modListParams.Path = $paths
+            }
+            'LiteralPath'
+            {
+                $paths = Resolve-Path -LiteralPath $LiteralPath | Select-Object -ExpandProperty Path
+                $modListParams.Path = $paths
+            }
+        }
+
         if ($PSBoundParameters.ContainsKey('Version'))
         {
-            $moduleCollection = @(Get-ModuleList -Name $ModuleName -Version $Version)
+            $modListParams.Version = $Version
+            $moduleCollection = @(Get-ModuleList -Name $Name -Version $Version)
         }
-        else
-        {
-            $moduleCollection = @(Get-ModuleList -Name $ModuleName)
-        }
+        $moduleCollection = @(Get-ModuleList @modListParams)
 
         $count = 1
         $moduleCount = $moduleCollection.Count
@@ -97,10 +209,10 @@ function Get-OperationValidation {
             $diagnosticsDir = Join-Path -Path $modulePath -ChildPath 'Diagnostics'
 
             # Get the module manifest so we can pull out the version
-            $moduleName = Split-Path -Path $modulePath -Leaf
-            $manifestFile = Get-ChildItem -Path $modulePath -Filter "$($moduleName).psd1"
+            $modName = Split-Path -Path $modulePath -Leaf
+            $manifestFile = Get-ChildItem -Path $modulePath -Filter "$($modName).psd1"
             if (-not $manifestFile) {
-                if ("$moduleName" -as [version]) {
+                if ("$modName" -as [version]) {
                     # We are in a "version" directory so get the actual module name from the parent directory
                     $parent = Split-Path -Path (Split-Path -Path $modulePath -Parent) -Leaf
                     $manifestFile = Get-ChildItem -Path $modulePath -Filter "$($parent).psd1"

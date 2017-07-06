@@ -20,7 +20,7 @@ Describe 'Invoke-OperationValidation' {
         Remove-Module OperationValidation -Verbose:$false
     }
 
-    Context "Invoke-OperationValidation passes override parameters" {
+    Context "Passes override parameters" {
         $tests = Get-OperationValidation -ModuleName VersionedModule -Version '1.0.0'
 
         It "No override parameters supplied" {
@@ -36,7 +36,7 @@ Describe 'Invoke-OperationValidation' {
         }
     }
 
-    Context "Invoke-OperationValidation runs tests based on tags" {
+    Context "Runs tests based on tags" {
         It "Can run tests with certain tag" {
             $results = Invoke-OperationValidation -Tag 'AAABBBCCC'
             $results[0].Result | Should be 'Passed'
@@ -49,6 +49,18 @@ Describe 'Invoke-OperationValidation' {
 
             $results = Invoke-OperationValidation -Modulename VersionedModule -ExcludeTag 'XXXYYYZZZ'
             $results.Count | Should be 2
+        }
+    }
+
+    Context 'Accepts Path and LiteralPath' {
+        It 'Can run tests by Path' {
+            $results = $testModuleDir | Invoke-OperationValidation
+            $results.Count | should be 4
+        }
+
+        It 'Can run tests by LiteralPath' {
+            $results = Invoke-OperationValidation -LiteralPath $testModuleDir
+            $results.Count | should be 4
         }
     }
 

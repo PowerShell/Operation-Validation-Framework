@@ -21,6 +21,16 @@ function Invoke-OperationValidation
     $env:psmodulepath and your own specific locations, use
     *,<yourmodulepath>
 
+    .PARAMETER Path
+    One or more paths to search for OVF modules in. This bypasses searching the directories contained in $env:PSModulePath.
+
+    .PARAMETER LiteralPath
+    One or more literal paths to search for OVF modules in. This bypasses searching the directories contained in $env:PSModulePath.
+
+    Unlike the Path parameter, the value of LiteralPath is used exactly as it is typed.
+    No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation
+    marks tell PowerShell not to interpret any characters as escape sequences.
+
     .PARAMETER TestType
     The type of tests to execute, this may be either "Simple", "Comprehensive"
     or Both ("Simple,Comprehensive"). "Simple,Comprehensive" is the default.
@@ -96,24 +106,68 @@ function Invoke-OperationValidation
     Get-OperationValidation
     #>
 
-    [CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="FileAndTest")]
+    [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'FileAndTest')]
     param (
-        [Parameter(ParameterSetName="Path",ValueFromPipelineByPropertyName=$true)][string[]]$TestFilePath,
-        [Parameter(ParameterSetName="FileAndTest",ValueFromPipeline=$true)][pscustomobject[]]$TestInfo,
-        [Parameter(ParameterSetName="UseGetOperationTest")][string[]]$ModuleName = "*",
-        [Parameter(ParameterSetName="UseGetOperationTest")]
-        [ValidateSet("Simple","Comprehensive")][string[]]$TestType = @("Simple","Comprehensive"),
-        [Parameter()][switch]$IncludePesterOutput,
-        [Parameter(ParameterSetName="UseGetOperationTest")]
-        [Parameter()][Version]$Version,
-        [Parameter(ParameterSetName="FileAndTest")]
-        [Parameter(ParameterSetName="UseGetOperationTest")]
-        [Parameter()][hashtable]$Overrides,
-        [Parameter(ParameterSetName="UseGetOperationTest")]
-        [Parameter()][string[]]$Tag,
-        [Parameter(ParameterSetName="UseGetOperationTest")]
-        [Parameter()][string[]]$ExcludeTag
-        )
+        [Parameter(ParameterSetName = 'TestFile', ValueFromPipelineByPropertyName = $true)]
+        [string[]]$TestFilePath,
+
+        [Parameter(ParameterSetName = 'FileAndTest', ValueFromPipeline = $true)]
+        [pscustomobject[]]$TestInfo,
+
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [string[]]$ModuleName,
+
+        [parameter(
+            Mandatory,
+            ParameterSetName  = 'Path',
+            Position = 0,
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName
+        )]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$Path,
+
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'LiteralPath',
+            Position = 0,
+            ValueFromPipelineByPropertyName
+        )]
+        [ValidateNotNullOrEmpty()]
+        [Alias('PSPath')]
+        [string[]]$LiteralPath,
+
+        [Parameter(ParameterSetName = 'Path')]
+        [Parameter(ParameterSetName = 'LiteralPath')]
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [ValidateSet('Simple', 'Comprehensive')]
+        [string[]]$TestType = @('Simple', 'Comprehensive'),
+
+        [switch]$IncludePesterOutput,
+
+        [Parameter(ParameterSetName = 'Path')]
+        [Parameter(ParameterSetName = 'LiteralPath')]
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [Version]$Version,
+
+        [Parameter(ParameterSetName = 'Path')]
+        [Parameter(ParameterSetName = 'LiteralPath')]
+        [Parameter(ParameterSetName = 'FileAndTest')]
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [hashtable]$Overrides,
+
+        [Parameter(ParameterSetName = 'Path')]
+        [Parameter(ParameterSetName = 'LiteralPath')]
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [string[]]$Tag,
+
+        [Parameter(ParameterSetName = 'Path')]
+        [Parameter(ParameterSetName = 'LiteralPath')]
+        [Parameter(ParameterSetName = 'UseGetOperationTest')]
+        [string[]]$ExcludeTag
+    )
+
     BEGIN
     {
         if ( -not (Get-Module -Name Pester))
@@ -127,13 +181,23 @@ function Invoke-OperationValidation
                 Throw "Cannot load Pester module"
             }
         }
+
+        if ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest')
+        {
+            if ([string]::IsNullOrEmpty($ModuleName))
+            {
+                $ModuleName = '*'
+            }
+        }
+
+        $resolveOvfTestParameterSetNames = 'UseGetOperationTest', 'Path', 'LiteralPath'
     }
+
     PROCESS
     {
-        if ( $PSCmdlet.ParameterSetName -eq "UseGetOperationTest" )
+        if ( $PSCmdlet.ParameterSetName -in $resolveOvfTestParameterSetNames )
         {
             $getOvfParams = @{
-                ModuleName = $ModuleName
                 TestType = $TestType
             }
             if ($PSBoundParameters.ContainsKey('Version'))
@@ -147,6 +211,19 @@ function Invoke-OperationValidation
             if ($PSBoundParameters.ContainsKey('ExcludeTag'))
             {
                 $getOvfParams.ExcludeTag = $ExcludeTag
+            }
+
+            if ($PSCmdlet.ParameterSetName -eq 'Path')
+            {
+                $getOvfParams.Path = $Path
+            }
+            elseIf ($PSCmdlet.ParameterSetName -eq 'LiteralPath')
+            {
+                $getOvfParams.LiteralPath = $LiteralPath
+            }
+            elseIf ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest')
+            {
+                $getOvfParams.ModuleName = $ModuleName
             }
 
             $testInfo = Get-OperationValidation @getOvfParams

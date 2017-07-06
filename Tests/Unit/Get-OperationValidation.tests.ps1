@@ -96,5 +96,14 @@ Describe 'Get-OperationValidation' {
                 $output[$i] | Should match $expected[$i]
             }
         }
+        It 'Can get tests by Path' {
+            $tests = $testModuleDir | Get-OperationValidation
+            $tests.Count | should be 4
+        }
+
+        It 'Can get tests by LiteralPath' {
+            $tests = Get-OperationValidation -LiteralPath $testModuleDir
+            $tests.Count | should be 4
+        }
     }
 }
