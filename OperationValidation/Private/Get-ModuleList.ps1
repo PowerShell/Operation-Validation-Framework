@@ -1,17 +1,38 @@
 function Get-ModuleList {
+    [cmdletbinding(DefaultParameterSetName = 'Name')]
     param (
+        [Parameter(Mandatory = $true, ParameterSetName = 'Name')]
         [string[]]$Name,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Path')]
+        [string[]]$Path,
 
         [version]$Version
     )
 
-    foreach($p in $env:psmodulepath.split(";"))
+    if ($PSCmdlet.ParameterSetName -eq 'Name')
+    {
+        $pathsToSearch = $env:PSModulePath.Split(';')
+    }
+    elseIf ($PSCmdlet.ParameterSetName -eq 'Path')
+    {
+        $pathsToSearch = $Path
+    }
+
+    foreach($p in $pathsToSearch)
     {
         if ( Test-Path -Path $p )
         {
             foreach($modDir in Get-ChildItem -Path $p -Directory)
             {
-                foreach ($n in $name )
+                Write-Debug "Checking for OVF in [$modDir]"
+
+                if ($PSCmdlet.ParameterSetName -eq 'Path')
+                {
+                    $Name = $modDir.Name
+                }
+
+                foreach ($n in $Name )
                 {
                     if ( $modDir.Name -like $n )
                     {
@@ -67,6 +88,10 @@ function Get-ModuleList {
                     }
                 }
             }
+        }
+        else
+        {
+            Write-Error -Message "Could not access [$p]. Does it exist?"
         }
     }
 }
