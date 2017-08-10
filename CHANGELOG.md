@@ -10,9 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - PR12 - Ability to specify parameter overrides to Pester tests (via @devblackops)
-- PR16 - Ability to specify Pester tests to execute based on tag(s) (via @devblackops).
+- PR16 - Ability to specify Pester tests to execute based on tag(s) (via @devblackops)
+- PR25 - Support for parsing Pester tests when the -Fixture parameter is used (via @GitAMBS)
+- PR26 - Support for -Path and -LiteralPath parameters to module directories (via @devblackops)
 
 ### Fixed
+
 - PR25 Discovery Pester 'Describe' block names when the -Name parameter is used (via @GitAMBS)
 
 ## [1.0.1] - 2015-12-05
