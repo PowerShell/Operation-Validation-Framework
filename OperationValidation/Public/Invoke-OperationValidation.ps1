@@ -314,7 +314,7 @@ function Invoke-OperationValidation
                     if ($testResult)
                     {
                         Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
-                        Convert-TestResult -Result $testResult -ModuleName $ModuleName
+                        Convert-TestResult -Result $testResult -ModuleName $ti.ModuleName
                     }
                 }
             }

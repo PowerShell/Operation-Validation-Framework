@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - PR25 Discovery Pester 'Describe' block names when the -Name parameter is used (via @GitAMBS)
+- Fixed #3 where an error would be generated when using Invoke-OperationValidation with the -TestFilePath parameter
+  against a Pester test file with a short path.
 
 ## [1.0.1] - 2015-12-05
 
