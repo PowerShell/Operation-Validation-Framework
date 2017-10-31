@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- PR25 Discovery Pester 'Describe' block names when the -Name parameter is used (via @GitAMBS)
+- PR25 - Discover Pester 'Describe' block names when the -Name parameter is used (via @GitAMBS)
+- PR29 - Remove Pester 4.0+ warning by using -Show parameter instead of -Quiet. Add -UseBasicParsing parameter to Invoke-WebRequest in tests (via @larssb)
 
 ## [1.0.1] - 2015-12-05
 
