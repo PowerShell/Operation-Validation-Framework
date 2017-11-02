@@ -3,10 +3,10 @@ function New-OperationValidationResult
 {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope='Function', Target='*')]
     param (
-        [Parameter(Mandatory=$true)][string]$Module,
         [Parameter(Mandatory=$true)][string]$FileName,
         [Parameter(Mandatory=$true)][string]$Name,
         [Parameter(Mandatory=$true)][string]$Result,
+        [Parameter()][string]$Module,
         [Parameter()][object]$RawResult,
         [Parameter()][object]$Error
     )

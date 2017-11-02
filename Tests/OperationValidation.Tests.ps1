@@ -23,7 +23,7 @@ Describe "OperationValidation Module Tests" {
 
     Context "Get-OperationValidation parameters" {
         It "ModuleName parameter is proper type" {
-            $commands[0].Parameters['ModuleName'].ParameterType | Should be ([System.String[]])
+            $commands[0].Parameters['Name'].ParameterType | Should be ([System.String[]])
         }
         It "Version parameter is proper type" {
             $commands[0].Parameters['Version'].ParameterType | Should be ([System.Version])

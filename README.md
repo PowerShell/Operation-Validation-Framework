@@ -1,7 +1,7 @@
 
 # Operation-Validation-Framework
 
-[![Build status](https://ci.appveyor.com/api/projects/status/rili6ki88ioyq23t?svg=true)](https://ci.appveyor.com/project/devblackops/operation-validation-framework)
+[![Build status](https://ci.appveyor.com/api/projects/status/rvbve3ajjtn4m0n2?svg=true)](https://ci.appveyor.com/project/devblackops/operation-validation-framework-a635v)
 
 A set of tools for executing validation of the operation of a system.
 It provides a way to organize and execute Pester tests which are written
