@@ -5,7 +5,7 @@ param(
 
 Describe 'Simple Validation of PSGallery' -Tag 'AAABBBCCC' {
     It 'The PowerShell Gallery should be responsive' {
-        $response = Invoke-WebRequest -Uri $WebsiteUrl
+        $response = Invoke-WebRequest -Uri $WebsiteUrl -UseBasicParsing
         $response.StatusCode | Should Be $StatusCode
     }
 

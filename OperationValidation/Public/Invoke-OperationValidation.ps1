@@ -170,11 +170,12 @@ function Invoke-OperationValidation
 
     BEGIN
     {
-        if ( -not (Get-Module -Name Pester))
+        $pesterMod = Get-Module -Name Pester
+        if ( -not $pesterMod)
         {
             if ( Get-Module -Name Pester -ListAvailable)
             {
-                Import-Module -Name Pester -Verbose:$false
+                $pesterMod = Import-Module -Name Pester -Verbose:$false -PassThru
             }
             else
             {
@@ -259,7 +260,6 @@ function Invoke-OperationValidation
                 }
 
                 # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
-                $pesterMod = Get-Module -Name Pester
                 if ($pesterMod.Version -ge '4.0.0')
                 {
                     if ($IncludePesterOutput)
@@ -323,10 +323,32 @@ function Invoke-OperationValidation
 
         if ($TestFilePath)
         {
+            $pesterParams = @{
+                PassThru = $true
+                Verbose = $false
+            }
+
+            # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
+            if ($pesterMod.Version -ge '4.0.0')
+            {
+                if ($IncludePesterOutput)
+                {
+                    $pesterParams.Show = 'All'
+                }
+                else
+                {
+                    $pesterParams.Show = 'None'
+                }
+            }
+            else
+            {
+                $pesterParams.Quiet = !$IncludePesterOutput
+            }            
+
             foreach($filePath in $TestFilePath) {
                 write-progress -Activity "Invoking tests in $filePath"
                 if ( $PSCmdlet.ShouldProcess($filePath)) {
-                    $testResult = Invoke-Pester $filePath -passthru -quiet:$quiet
+                    $testResult = Invoke-Pester $filePath @pesterParams
                     Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $filePath
                     Convert-TestResult -Result $testResult
                 }
