@@ -15,6 +15,7 @@ Describe 'Simple Validation of Microsoft' -Tag 'AAABBBCCC', 'XXXYYYZZZ' {
 
 Describe 'Simple Validation of Github' -Tag 'JJJKKKLLL' {
     It 'GitHub should be responsive' {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $response = Invoke-WebRequest -Uri 'https://www.github.com' -UseBasicParsing
         $response.StatusCode | Should be 200
     }
