@@ -1,4 +1,3 @@
-
 function Get-OperationValidation {
     <#
     .SYNOPSIS
@@ -159,6 +158,9 @@ function Get-OperationValidation {
         [Alias('PSPath')]
         [string[]]$LiteralPath,
 
+        # [Parameter(ParameterSetName = 'ModuleName')]
+        # [Parameter(ParameterSetName = 'Path')]
+        # [Parameter(ParameterSetName = 'LiteralPath')]
         [ValidateSet('Simple', 'Comprehensive')]
         [string[]]$TestType =  @('Simple', 'Comprehensive'),
 
@@ -221,8 +223,11 @@ function Get-OperationValidation {
 
             # Some OVF modules might not have a manifest (.psd1) file.
             if ($manifestFile) {
-                $manifest = Parse-Psd1 $manifestFile.FullName
-                #$manifest = Test-ModuleManifest -Path $manifestFile.FullName -Verbose:$false -ErrorAction SilentlyContinue
+                if ($PSVersionTable.PSVersion -ge 5) {
+                    $manifest = Import-PowerShellDataFile -Path $manifestFile.FullName
+                } else {
+                    $manifest = Parse-Psd1 $manifestFile.FullName
+                }
             }
             else
             {
@@ -238,7 +243,7 @@ function Get-OperationValidation {
                     {
                         continue
                     }
-                    foreach($file in (Get-ChildItem -Path $testDir -Filter *.tests.ps1))
+                    foreach($file in (Get-ChildItem -Path $testDir | Where-Object {$_.Name -like '*.tests.ps1'}))
                     {
                         # Pull out parameters to Pester script if they exist
                         $script = Get-Command -Name $file.fullname
