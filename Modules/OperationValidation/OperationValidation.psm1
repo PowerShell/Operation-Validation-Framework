@@ -263,7 +263,7 @@ param (
                 [string[]]$Name,
                 [version]$Version
             )
-            foreach($p in $env:psmodulepath.split(";"))
+            foreach($p in $env:PSModulePath.split($script:pathSeparator))
             {
                 if ( Test-Path -Path $p )
                 {
