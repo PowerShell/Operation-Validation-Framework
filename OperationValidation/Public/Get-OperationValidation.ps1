@@ -133,7 +133,10 @@ function Get-OperationValidation {
     #>
     [CmdletBinding(DefaultParameterSetName = 'ModuleName')]
     param (
-        [Parameter(Position = 0, ParameterSetName = 'ModuleName')]
+        [Parameter(
+            ParameterSetName = 'ModuleName',
+            Position = 0
+        )]
         [Alias('ModuleName')]
         [string[]]$Name = '*',
 
@@ -176,27 +179,22 @@ function Get-OperationValidation {
 
         # Resolve module list either by module name, path, or literalpath
         $modListParams = @{}
-        switch ($PSCmdlet.ParameterSetName)
-        {
-            'ModuleName'
-            {
+        switch ($PSCmdlet.ParameterSetName) {
+            'ModuleName' {
                 $modListParams.Name = $Name
                 break
             }
-            'Path'
-            {
+            'Path' {
                 $paths = Resolve-Path -Path $Path | Select-Object -ExpandProperty Path
                 $modListParams.Path = $paths
             }
-            'LiteralPath'
-            {
+            'LiteralPath' {
                 $paths = Resolve-Path -LiteralPath $LiteralPath | Select-Object -ExpandProperty Path
                 $modListParams.Path = $paths
             }
         }
 
-        if ($PSBoundParameters.ContainsKey('Version'))
-        {
+        if ($PSBoundParameters.ContainsKey('Version')) {
             $modListParams.Version = $Version
             $moduleCollection = @(Get-ModuleList -Name $Name -Version $Version)
         }
@@ -205,8 +203,7 @@ function Get-OperationValidation {
         $count = 1
         $moduleCount = $moduleCollection.Count
         Write-Debug -Message "Found [$moduleCount] OVF modules"
-        foreach($modulePath in $moduleCollection)
-        {
+        foreach($modulePath in $moduleCollection) {
             Write-Progress -Activity ("Searching for Diagnostics in $modulePath") -PercentComplete ($count++/$moduleCount*100) -status ' '
             $diagnosticsDir = Join-Path -Path $modulePath -ChildPath 'Diagnostics'
 
@@ -228,47 +225,39 @@ function Get-OperationValidation {
                 } else {
                     $manifest = Parse-Psd1 $manifestFile.FullName
                 }
-            }
-            else
-            {
+            } else {
                 $manifest = $null
             }
 
-            if ( test-path -path $diagnosticsDir )
-            {
-                foreach($dir in $testType)
-                {
+            if ( test-path -path $diagnosticsDir ) {
+                foreach($dir in $testType) {
                     $testDir = Join-Path -Path $diagnosticsDir -ChildPath $dir
-                    if (-not (Test-Path -Path $testDir))
-                    {
+                    if (-not (Test-Path -Path $testDir)) {
                         continue
                     }
-                    foreach($file in (Get-ChildItem -Path $testDir | Where-Object {$_.Name -like '*.tests.ps1'}))
-                    {
+                    foreach($file in (Get-ChildItem -Path $testDir | Where-Object {$_.Name -like '*.tests.ps1'})) {
                         # Pull out parameters to Pester script if they exist
                         $script = Get-Command -Name $file.fullname
                         $parameters = $script.Parameters
-                        if ($parameters.Keys.Count -gt 0)
-                        {
+                        if ($parameters.Keys.Count -gt 0) {
                             Write-Debug -Message 'Test script has overrideable parameters'
                             Write-Debug -Message "`n$($parameters.Keys | Out-String)"
                         }
 
                         $tests = @(Get-TestFromScript -ScriptPath $file.FullName)
-                        foreach ($test in $tests)
-                        {
+                        foreach ($test in $tests) {
                             # Only return tests that match the tag filter(s)
                             if ($Tag -and @(Compare-Object -ReferenceObject $Tag -DifferenceObject $test.Tags -IncludeEqual -ExcludeDifferent).count -eq 0) { continue }
                             if ($ExcludeTag -and @(Compare-Object -ReferenceObject $ExcludeTag -DifferenceObject $test.Tags -IncludeEqual -ExcludeDifferent).count -gt 0) { continue }
 
                             $modInfoParams = @{
-                                FilePath = $file.Fullname
-                                File = $file.Name
-                                Type = $dir
-                                Name = $test.Name
+                                FilePath   = $file.Fullname
+                                File       = $file.Name
+                                Type       = $dir
+                                Name       = $test.Name
                                 ModuleName =  $modulePath
-                                Tags = $test.Tags
-                                Version = if ($manifest.ModuleVersion) { [version]$manifest.ModuleVersion } else { $null }
+                                Tags       = $test.Tags
+                                Version    = if ($manifest.ModuleVersion) { [version]$manifest.ModuleVersion } else { $null }
                                 Parameters = $parameters
                             }
                             New-OperationValidationInfo @modInfoParams

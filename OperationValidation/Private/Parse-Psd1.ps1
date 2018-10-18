@@ -2,7 +2,7 @@
 function Parse-Psd1 {
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [Microsoft.PowerShell.DesiredStateConfiguration.ArgumentToConfigurationDataTransformation()]
         [hashtable] $data
     )

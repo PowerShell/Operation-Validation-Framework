@@ -61,13 +61,16 @@ RequiredModules = @('Pester')
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-FormatsToProcess = @("OperationValidation.Format.ps1xml")
+FormatsToProcess = @('OperationValidation.Format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = @('Get-OperationValidation','Invoke-OperationValidation')
+FunctionsToExport = @(
+    'Get-OperationValidation'
+    'Invoke-OperationValidation'
+)
 
 # Cmdlets to export from this module
 # CmdletsToExport = '*'
@@ -92,11 +95,16 @@ FileList = @(
     'Diagnostics\Comprehensive\PSGallery.Comprehensive.Tests.ps1'
     'Diagnostics\Simple\PSGallery.Simple.Tests.ps1'
     'Private\Convert-TestResult.ps1'
+    'Private\Get-ModuleList.ps1'
+    'Private\Get-TestCaseNamesFromAst.ps1'
+    'Private\Get-TestFromAst.ps1'
     'Private\Get-TestFromScript.ps1'
+    'Private\Get-TestName.ps1'
     'Private\New-OperationValidationFailure.ps1'
     'Private\New-OperationValidationInfo.ps1'
     'Private\New-OperationValidationInfo.ps1'
     'Private\New-OperationValidationResult.ps1'
+    'Private\Parse-Psd1.ps1'
     'Public\Get-OperationValidation.ps1'
     'Public\Invoke-OperationValidation.ps1'
 )
