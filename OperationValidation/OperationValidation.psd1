@@ -119,7 +119,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'https://raw.githubusercontent.com/PowerShell/Operation-Validation-Framework/master/CHANGELOG.md'
 
     } # End of PSData hashtable
 
