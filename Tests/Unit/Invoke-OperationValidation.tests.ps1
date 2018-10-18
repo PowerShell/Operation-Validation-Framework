@@ -4,12 +4,13 @@ $testModuleDir = (Resolve-Path -Path (Join-Path -Path $env:BHProjectPath -ChildP
 Describe 'Invoke-OperationValidation' {
 
     BeforeAll {
+        $pathSeparator = [IO.Path]::PathSeparator
         $savedModulePath = $env:PSModulePath
-        if ($testModuleDir -notin $env:psmodulepath.split(";")) {
-            $env:PSModulePath += ";$testModuleDir"
+        if ($testModuleDir -notin $env:PSModulePath.split($pathSeparator)) {
+            $env:PSModulePath += ($pathSeparator + $testModuleDir)
         }
-        if ($env:BHProjectPath -notin $env:PSModulePath.Split(';')) {
-            $env:PSModulePath += ";$env:BHProjectPath"
+        if ($env:BHProjectPath -notin $env:PSModulePath.Split($pathSeparator)) {
+            $env:PSModulePath += ($pathSeparator + $env:BHProjectPath)
         }
         Remove-Module Microsoft.PowerShell.Operation.Validation -Force -ErrorAction SilentlyContinue -Verbose:$false
         Import-Module $env:BHModulePath -Force -Verbose:$false

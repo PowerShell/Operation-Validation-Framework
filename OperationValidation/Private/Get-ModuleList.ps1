@@ -12,7 +12,7 @@ function Get-ModuleList {
 
     if ($PSCmdlet.ParameterSetName -eq 'Name')
     {
-        $pathsToSearch = $env:PSModulePath.Trim(';').Split(';')
+        $pathsToSearch = $env:PSModulePath.Trim($script:pathSeparator).Split($script:pathSeparator)
     }
     elseIf ($PSCmdlet.ParameterSetName -eq 'Path')
     {

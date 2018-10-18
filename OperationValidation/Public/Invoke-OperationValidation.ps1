@@ -230,7 +230,7 @@ function Invoke-OperationValidation
             $testInfo = Get-OperationValidation @getOvfParams
         }
 
-        if ( $null -ne $testInfo )
+        if ( $testInfo )
         {
             # first check to be sure all of the TestInfos are sane
             foreach($ti in $testinfo)
@@ -343,7 +343,7 @@ function Invoke-OperationValidation
             else
             {
                 $pesterParams.Quiet = !$IncludePesterOutput
-            }            
+            }
 
             foreach($filePath in $TestFilePath) {
                 write-progress -Activity "Invoking tests in $filePath"
