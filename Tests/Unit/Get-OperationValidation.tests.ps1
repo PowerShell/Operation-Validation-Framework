@@ -23,7 +23,7 @@ Describe 'Get-OperationValidation' {
 
     Context "Finds proper tests" {
         It "Can find its own tests" {
-            $tests = Get-OperationValidation -Modulename OperationValidation
+            $tests = Get-OperationValidation -Path (Split-Path -Path $env:BHModulePath -Parent)
 
             $tests.Count | Should be 2
             $tests.File -eq "PSGallery.Simple.Tests.ps1" | Should be "PSGallery.Simple.Tests.ps1"
