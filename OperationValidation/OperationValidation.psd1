@@ -13,7 +13,7 @@ RootModule = 'OperationValidation.psm1'
 # ModuleToProcess = 'OperationValidation.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.0'
+ModuleVersion = '1.2.0'
 
 # ID used to uniquely identify this module
 GUID = '25bd9e34-bff9-4552-a23d-854857b42462'
