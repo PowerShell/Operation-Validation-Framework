@@ -1,6 +1,5 @@
 
-function Invoke-OperationValidation
-{
+function Invoke-OperationValidation {
     <#
     .SYNOPSIS
     Invoke the operational tests from modules
@@ -108,10 +107,16 @@ function Invoke-OperationValidation
 
     [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'FileAndTest')]
     param (
-        [Parameter(ParameterSetName = 'TestFile', ValueFromPipelineByPropertyName = $true)]
+        [Parameter(
+            ParameterSetName = 'TestFile',
+            ValueFromPipelineByPropertyName = $true
+        )]
         [string[]]$TestFilePath,
 
-        [Parameter(ParameterSetName = 'FileAndTest', ValueFromPipeline = $true)]
+        [Parameter(
+            ParameterSetName = 'FileAndTest',
+            ValueFromPipeline
+        )]
         [pscustomobject[]]$TestInfo,
 
         [Parameter(ParameterSetName = 'UseGetOperationTest')]
@@ -168,25 +173,18 @@ function Invoke-OperationValidation
         [string[]]$ExcludeTag
     )
 
-    BEGIN
-    {
+    begin {
         $pesterMod = Get-Module -Name Pester
-        if ( -not $pesterMod)
-        {
-            if ( Get-Module -Name Pester -ListAvailable)
-            {
+        if (-not $pesterMod) {
+            if (Get-Module -Name Pester -ListAvailable) {
                 $pesterMod = Import-Module -Name Pester -Verbose:$false -PassThru
-            }
-            else
-            {
+            } else {
                 Throw "Cannot load Pester module"
             }
         }
 
-        if ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest')
-        {
-            if ([string]::IsNullOrEmpty($ModuleName))
-            {
+        if ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest') {
+            if ([string]::IsNullOrEmpty($ModuleName)) {
                 $ModuleName = '*'
             }
         }
@@ -194,125 +192,93 @@ function Invoke-OperationValidation
         $resolveOvfTestParameterSetNames = 'UseGetOperationTest', 'Path', 'LiteralPath'
     }
 
-    PROCESS
-    {
-        if ( $PSCmdlet.ParameterSetName -in $resolveOvfTestParameterSetNames )
-        {
+    process {
+        if ($PSCmdlet.ParameterSetName -in $resolveOvfTestParameterSetNames) {
             $getOvfParams = @{
                 TestType = $TestType
             }
-            if ($PSBoundParameters.ContainsKey('Version'))
-            {
+            if ($PSBoundParameters.ContainsKey('Version')) {
                 $getOvfParams.Version = $Version
             }
-            if ($PSBoundParameters.ContainsKey('Tag'))
-            {
+            if ($PSBoundParameters.ContainsKey('Tag')) {
                 $getOvfParams.Tag = $Tag
             }
-            if ($PSBoundParameters.ContainsKey('ExcludeTag'))
-            {
+            if ($PSBoundParameters.ContainsKey('ExcludeTag')) {
                 $getOvfParams.ExcludeTag = $ExcludeTag
             }
 
-            if ($PSCmdlet.ParameterSetName -eq 'Path')
-            {
+            if ($PSCmdlet.ParameterSetName -eq 'Path') {
                 $getOvfParams.Path = $Path
-            }
-            elseIf ($PSCmdlet.ParameterSetName -eq 'LiteralPath')
-            {
+            } elseIf ($PSCmdlet.ParameterSetName -eq 'LiteralPath') {
                 $getOvfParams.LiteralPath = $LiteralPath
-            }
-            elseIf ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest')
-            {
+            } elseIf ($PSCmdLet.ParameterSetName -eq 'UseGetOperationTest') {
                 $getOvfParams.ModuleName = $ModuleName
             }
 
             $testInfo = Get-OperationValidation @getOvfParams
         }
 
-        if ( $null -ne $testInfo )
-        {
+        if ($testInfo) {
             # first check to be sure all of the TestInfos are sane
-            foreach($ti in $testinfo)
-            {
-                if ( ! ($ti.FilePath -and $ti.Name))
-                {
+            foreach($ti in $testinfo) {
+                if (-not ($ti.FilePath -and $ti.Name)) {
                     throw "TestInfo must contain the path and the list of tests"
                 }
             }
 
             # first check to be sure all of the TestInfos are sane
-            foreach($ti in $testinfo)
-            {
-                if ( ! ($ti.FilePath -and $ti.Name))
-                {
+            foreach($ti in $testinfo) {
+                if (-not ($ti.FilePath -and $ti.Name)) {
                     throw "TestInfo must contain the path and the list of tests"
                 }
             }
 
             Write-Verbose -Message ("EXECUTING: {0} [{1}]" -f $ti.FilePath,($ti.Name -join ","))
-            foreach($ti in $testinfo)
-            {
+            foreach($ti in $testinfo) {
                 $pesterParams = @{
                     TestName = $ti.Name
                     PassThru = $true
-                    Verbose = $false
+                    Verbose  = $false
                 }
 
                 # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
-                if ($pesterMod.Version -ge '4.0.0')
-                {
-                    if ($IncludePesterOutput)
-                    {
+                if ($pesterMod.Version -ge '4.0.0') {
+                    if ($IncludePesterOutput) {
                         $pesterParams.Show = 'All'
-                    }
-                    else
-                    {
+                    } else {
                         $pesterParams.Show = 'None'
                     }
-                }
-                else
-                {
-                    $pesterParams.Quiet = !$IncludePesterOutput
+                } else {
+                    $pesterParams.Quiet = -not $IncludePesterOutput
                 }
 
-                if ($ti.ScriptParameters)
-                {
+                if ($ti.ScriptParameters) {
                     Write-Debug -Message 'Test has script parameters'
-                    if ($PSBoundParameters.ContainsKey('Overrides'))
-                    {
+                    if ($PSBoundParameters.ContainsKey('Overrides')) {
                         Write-Verbose -Message "Overriding with parameters:`n$($Overrides | Format-Table -Property Key, Value | Out-String)"
                         $pesterParams.Script = @{
-                            Path = $ti.FilePath
+                            Path       = $ti.FilePath
                             Parameters = $Overrides
                         }
-                    }
-                    else
-                    {
+                    } else {
                         Write-Debug -Message 'Using default parameters for test'
                         $pesterParams.Path = $ti.FilePath
                     }
-                }
-                else
-                {
+                } else {
                     $pesterParams.Path = $ti.FilePath
                 }
 
-                if ($PSBoundParameters.ContainsKey('Tag'))
-                {
+                if ($PSBoundParameters.ContainsKey('Tag')) {
                     $pesterParams.Tag = $Tag
                 }
 
-                if ($PSBoundParameters.ContainsKey('ExcludeTag'))
-                {
+                if ($PSBoundParameters.ContainsKey('ExcludeTag')) {
                     $pesterParams.ExcludeTag = $ExcludeTag
                 }
 
-                if ( $PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]"))
-                {
+                if ($PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]")) {
                     $testResult = Invoke-Pester @pesterParams
-                    if ($testResult)
-                    {
+                    if ($testResult) {
                         Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
                         Convert-TestResult -Result $testResult -ModuleName $ti.ModuleName
                     }
@@ -321,33 +287,26 @@ function Invoke-OperationValidation
             return
         }
 
-        if ($TestFilePath)
-        {
+        if ($TestFilePath) {
             $pesterParams = @{
                 PassThru = $true
-                Verbose = $false
+                Verbose  = $false
             }
 
             # Pester 4.0.0 deprecated the 'Quiet' parameter in favor of 'Show'
-            if ($pesterMod.Version -ge '4.0.0')
-            {
-                if ($IncludePesterOutput)
-                {
+            if ($pesterMod.Version -ge '4.0.0') {
+                if ($IncludePesterOutput) {
                     $pesterParams.Show = 'All'
-                }
-                else
-                {
+                } else {
                     $pesterParams.Show = 'None'
                 }
+            } else {
+                $pesterParams.Quiet = -not $IncludePesterOutput
             }
-            else
-            {
-                $pesterParams.Quiet = !$IncludePesterOutput
-            }            
 
             foreach($filePath in $TestFilePath) {
                 write-progress -Activity "Invoking tests in $filePath"
-                if ( $PSCmdlet.ShouldProcess($filePath)) {
+                if ($PSCmdlet.ShouldProcess($filePath)) {
                     $testResult = Invoke-Pester $filePath @pesterParams
                     Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $filePath
                     Convert-TestResult -Result $testResult

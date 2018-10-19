@@ -6,12 +6,13 @@ $testModuleDir = (Resolve-Path -Path (Join-Path -Path $env:BHProjectPath -ChildP
 
 # Get module commands
 # Remove all versions of the module from the session. Pester can't handle multiple versions.
+$pathSeparator = [IO.Path]::PathSeparator
 $savedModulePath = $env:PSModulePath
-if ( $env:psmodulepath.split(";") -notcontains $testModuleDir ) {
-    $env:psmodulepath += ";$testModuleDir"
+if ($env:PSModulePath.split($pathSeparator) -notcontains $testModuleDir) {
+    $env:PSModulePath += ($pathSeparator + $testModuleDir)
 }
-if ($env:PSModulePath.Split(';') -notcontains $env:BHModulePath) {
-    $env:PSModulePath += ";$env:BHProjectPath"
+if ($env:PSModulePath.Split($pathSeparator) -notcontains $env:BHModulePath) {
+    $env:PSModulePath += ($pathSeparator + $env:BHProjectPath)
 }
 Remove-Module Microsoft.PowerShell.Operation.Validation -Force -ErrorAction SilentlyContinue -Verbose:$false
 Import-Module $env:BHModulePath -Force -Verbose:$false

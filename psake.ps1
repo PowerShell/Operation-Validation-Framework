@@ -54,7 +54,7 @@ task Analyze -Depends Init {
 
 task Pester-Meta -depends Init {
     $testResultsXml = Join-Path -Path $outputDir -ChildPath 'testResults_meta.xml'
-    $testResults = Invoke-Pester -Path (Join-Path -Path $tests -ChildPath 'Meta' ) -PassThru -OutputFile $testResultsXml -OutputFormat NUnitXml
+    $testResults = Invoke-Pester -Path (Join-Path -Path $tests -ChildPath 'Meta') -PassThru -OutputFile $testResultsXml -OutputFormat NUnitXml
     if ($testResults.FailedCount -gt 0) {
         $testResults | Format-List
         Write-Error -Message 'One or more Pester meta tests failed. Build cannot continue!'
@@ -63,7 +63,7 @@ task Pester-Meta -depends Init {
 
 task Pester-Unit -depends Init {
     $testResultsXml = Join-Path -Path $outputDir -ChildPath 'testResults_unit.xml'
-    $testResults = Invoke-Pester -Path (Join-Path -Path $tests -ChildPath 'Unit' ) -PassThru -OutputFile $testResultsXml -OutputFormat NUnitXml
+    $testResults = Invoke-Pester -Path (Join-Path -Path $tests -ChildPath 'Unit') -PassThru -OutputFile $testResultsXml -OutputFormat NUnitXml
     if ($testResults.FailedCount -gt 0) {
         $testResults | Format-List
         Write-Error -Message 'One or more Pester unit tests failed. Build cannot continue!'

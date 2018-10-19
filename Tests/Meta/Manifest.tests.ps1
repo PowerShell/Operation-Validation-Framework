@@ -45,7 +45,7 @@ Describe 'Module manifest' {
         $script:changelogVersion = $null
         It "has a valid version in the changelog" {
             foreach ($line in (Get-Content $changelogPath)) {
-                if ($line -match "^\D*(?<Version>(\d+\.){1,3}\d+)") {
+                if ($line -match "^##\s\[(?<Version>(\d+\.){1,3}\d+)\]") {
                     $script:changelogVersion = $matches.Version
                     break
                 }
@@ -55,7 +55,7 @@ Describe 'Module manifest' {
         }
 
         It "changelog and manifest versions are the same" {
-            $script:changelogVersion -as [Version] | Should be ( $script:manifest.Version -as [Version] )
+            $script:changelogVersion -as [Version] | Should be ($script:manifest.Version -as [Version])
         }
 
         if (Get-Command -Name 'git.exe' -ErrorAction SilentlyContinue) {
@@ -72,7 +72,7 @@ Describe 'Module manifest' {
             }
 
             It "all versions are the same" {
-                $script:changelogVersion -as [Version] | Should be ( $script:manifest.Version -as [Version] )
+                $script:changelogVersion -as [Version] | Should be ($script:manifest.Version -as [Version])
             }
         }
     }

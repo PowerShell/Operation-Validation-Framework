@@ -1,6 +1,5 @@
 
-function Get-TestFromScript
-{
+function Get-TestFromScript {
     param (
         [parameter(Mandatory)]
         [string]$ScriptPath
@@ -17,20 +16,16 @@ function Get-TestFromScript
         }, $true) |
         ForEach-Object {
             # This is the name of the 'describe' block
-            for ($x = 0; $x -lt $_.CommandElements.Count; $x++)
-            {
+            for ($x = 0; $x -lt $_.CommandElements.Count; $x++) {
                 # Name parameter is named
-                if ($_.CommandElements[$x] -is [System.Management.Automation.Language.CommandParameterAst] -and $_.CommandElements[$x].ParameterName -eq 'Name')
-                {
+                if ($_.CommandElements[$x] -is [System.Management.Automation.Language.CommandParameterAst] -and $_.CommandElements[$x].ParameterName -eq 'Name') {
                     $describeName = $_.CommandElements[$x + 1].value
-                }
-                # if we have a string without a parameter name, return first hit. Name parameter is at position 0.
-                ElseIf (($_.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst]) -and ($_.CommandElements[$x - 1] -is [System.Management.Automation.Language.StringConstantExpressionAst]))
-                {
+                } elseIf (($_.CommandElements[$x] -is [System.Management.Automation.Language.StringConstantExpressionAst]) -and ($_.CommandElements[$x - 1] -is [System.Management.Automation.Language.StringConstantExpressionAst])) {
+                    # if we have a string without a parameter name, return first hit. Name parameter is at position 0.
                     $describeName = $_.CommandElements[$x].value
                 }
             }
-            $item = [PSCustomObject][ordered]@{
+            $item = [pscustomobject][ordered]@{
                 Name = $describeName
                 Tags = @()
             }
