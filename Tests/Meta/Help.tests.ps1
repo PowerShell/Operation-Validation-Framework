@@ -8,7 +8,7 @@ $testModuleDir = (Resolve-Path -Path (Join-Path -Path $env:BHProjectPath -ChildP
 # Remove all versions of the module from the session. Pester can't handle multiple versions.
 $pathSeparator = [IO.Path]::PathSeparator
 $savedModulePath = $env:PSModulePath
-if ( $env:PSModulePath.split($pathSeparator) -notcontains $testModuleDir ) {
+if ($env:PSModulePath.split($pathSeparator) -notcontains $testModuleDir) {
     $env:PSModulePath += ($pathSeparator + $testModuleDir)
 }
 if ($env:PSModulePath.Split($pathSeparator) -notcontains $env:BHModulePath) {

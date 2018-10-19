@@ -8,9 +8,9 @@ Function Convert-TestResult {
         [string]$ModuleName
     )
 
-    foreach ( $testResult in $result.TestResult ) {
+    foreach ($testResult in $result.TestResult) {
         $testError = $null
-        if ( $testResult.Result -eq 'Failed' ) {
+        if ($testResult.Result -eq 'Failed') {
             Write-Verbose -message 'Creating error object'
             $testError = New-OperationValidationFailure -Stacktrace $testResult.StackTrace -FailureMessage $testResult.FailureMessage
         }

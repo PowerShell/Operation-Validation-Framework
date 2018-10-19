@@ -31,10 +31,10 @@ function Get-ModuleList {
                     $Name = $modDir.Name
                 }
 
-                foreach ($n in $Name ) {
-                    if ( $modDir.Name -like $n ) {
+                foreach ($n in $Name) {
+                    if ($modDir.Name -like $n) {
                         # now determine if there's a diagnostics directory, or a version
-                        if ( Test-Path -Path (Join-Path -Path $modDir.FullName -ChildPath 'Diagnostics')) {
+                        if (Test-Path -Path (Join-Path -Path $modDir.FullName -ChildPath 'Diagnostics')) {
                             # Did we specify a specific version to find?
                             if ($PSBoundParameters.ContainsKey('Version')) {
                                 $manifestFile = Get-ChildItem -Path $modDir.FullName -Filter "$($modDir.Name).psd1" | Select-Object -First 1
@@ -68,7 +68,7 @@ function Get-ModuleList {
                         $DiagnosticDir = $potentialDiagnostics |
                             Sort-Object {$_.name -as [version]} |
                             Select-Object -Last 1
-                        if ( $DiagnosticDir ) {
+                        if ($DiagnosticDir) {
                             $DiagnosticDir.FullName
                             break
                         }

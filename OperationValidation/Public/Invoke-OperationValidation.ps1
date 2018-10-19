@@ -175,8 +175,8 @@ function Invoke-OperationValidation {
 
     begin {
         $pesterMod = Get-Module -Name Pester
-        if ( -not $pesterMod) {
-            if ( Get-Module -Name Pester -ListAvailable) {
+        if (-not $pesterMod) {
+            if (Get-Module -Name Pester -ListAvailable) {
                 $pesterMod = Import-Module -Name Pester -Verbose:$false -PassThru
             } else {
                 Throw "Cannot load Pester module"
@@ -193,7 +193,7 @@ function Invoke-OperationValidation {
     }
 
     process {
-        if ( $PSCmdlet.ParameterSetName -in $resolveOvfTestParameterSetNames ) {
+        if ($PSCmdlet.ParameterSetName -in $resolveOvfTestParameterSetNames) {
             $getOvfParams = @{
                 TestType = $TestType
             }
@@ -218,7 +218,7 @@ function Invoke-OperationValidation {
             $testInfo = Get-OperationValidation @getOvfParams
         }
 
-        if ( $testInfo ) {
+        if ($testInfo) {
             # first check to be sure all of the TestInfos are sane
             foreach($ti in $testinfo) {
                 if (-not ($ti.FilePath -and $ti.Name)) {
@@ -276,7 +276,7 @@ function Invoke-OperationValidation {
                     $pesterParams.ExcludeTag = $ExcludeTag
                 }
 
-                if ( $PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]")) {
+                if ($PSCmdlet.ShouldProcess("$($ti.Name) [$($ti.FilePath)]")) {
                     $testResult = Invoke-Pester @pesterParams
                     if ($testResult) {
                         Add-member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $ti.FilePath
@@ -306,7 +306,7 @@ function Invoke-OperationValidation {
 
             foreach($filePath in $TestFilePath) {
                 write-progress -Activity "Invoking tests in $filePath"
-                if ( $PSCmdlet.ShouldProcess($filePath)) {
+                if ($PSCmdlet.ShouldProcess($filePath)) {
                     $testResult = Invoke-Pester $filePath @pesterParams
                     Add-Member -InputObject $testResult -MemberType NoteProperty -Name Path -Value $filePath
                     Convert-TestResult -Result $testResult

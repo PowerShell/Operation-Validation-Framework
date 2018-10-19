@@ -4,7 +4,7 @@ Describe 'Module' {
     BeforeAll {
         $pathSeparator = [IO.Path]::PathSeparator
         $savedModulePath = $env:PSModulePath
-        if ( $env:PSModulePath.split($pathSeparator) -notcontains $testModuleDir ) {
+        if ($env:PSModulePath.split($pathSeparator) -notcontains $testModuleDir) {
             $env:PSModulePath += ($pathSeparator + $testModuleDir)
         }
         if ($env:PSModulePath.Split($pathSeparator) -notcontains $env:BHModulePath) {

@@ -229,7 +229,7 @@ function Get-OperationValidation {
                 $manifest = $null
             }
 
-            if ( test-path -path $diagnosticsDir ) {
+            if (Test-Path -Path $diagnosticsDir) {
                 foreach($dir in $testType) {
                     $testDir = Join-Path -Path $diagnosticsDir -ChildPath $dir
                     if (-not (Test-Path -Path $testDir)) {

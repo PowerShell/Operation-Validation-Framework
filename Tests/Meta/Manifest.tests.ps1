@@ -55,7 +55,7 @@ Describe 'Module manifest' {
         }
 
         It "changelog and manifest versions are the same" {
-            $script:changelogVersion -as [Version] | Should be ( $script:manifest.Version -as [Version] )
+            $script:changelogVersion -as [Version] | Should be ($script:manifest.Version -as [Version])
         }
 
         if (Get-Command -Name 'git.exe' -ErrorAction SilentlyContinue) {
@@ -72,7 +72,7 @@ Describe 'Module manifest' {
             }
 
             It "all versions are the same" {
-                $script:changelogVersion -as [Version] | Should be ( $script:manifest.Version -as [Version] )
+                $script:changelogVersion -as [Version] | Should be ($script:manifest.Version -as [Version])
             }
         }
     }

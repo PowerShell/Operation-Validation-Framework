@@ -31,7 +31,7 @@ Describe 'E2E validation of PSGallery' -Fixture {
     }
 
     AfterAll {
-        if ( $PSDefaultParameterValues['It:skip'] -ne $true) {
+        if ($PSDefaultParameterValues['It:skip'] -ne $true) {
             Uninstall-Module -Force -RequiredVersion $version -Name $ModuleName -ErrorAction SilentlyContinue
         }
     }
