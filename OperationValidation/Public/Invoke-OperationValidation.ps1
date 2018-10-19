@@ -249,7 +249,7 @@ function Invoke-OperationValidation {
                         $pesterParams.Show = 'None'
                     }
                 } else {
-                    $pesterParams.Quiet = !$IncludePesterOutput
+                    $pesterParams.Quiet = -not $IncludePesterOutput
                 }
 
                 if ($ti.ScriptParameters) {
