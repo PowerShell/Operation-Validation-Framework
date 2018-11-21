@@ -1,7 +1,9 @@
 
 # Operation-Validation-Framework
 
-[![Build status](https://ci.appveyor.com/api/projects/status/rvbve3ajjtn4m0n2?svg=true)](https://ci.appveyor.com/project/devblackops/operation-validation-framework-a635v)
+| AppVeyor | PS Gallery | License
+|----------|------------|---------|
+[![AppVeyor Build Status][appveyor-badge]][appveyor-build] | [![PowerShell Gallery][psgallery-badge]][psgallery] | [![License][license-badge]][license]
 
 A set of tools for executing validation of the operation of a system.
 It provides a way to organize and execute Pester tests which are written
@@ -82,3 +84,10 @@ Invoke-OperationValidation        Function  Invoke the operational tests from mo
     Passed  Scenario targeted tests:The Firewall Rules:A rule for UDP port 3389 is enabled
 
 ```
+
+[appveyor-badge]: https://ci.appveyor.com/api/projects/status/rvbve3ajjtn4m0n2?svg=true
+[appveyor-build]: https://ci.appveyor.com/project/devblackops/operation-validation-framework-a635v
+[psgallery-badge]: https://img.shields.io/powershellgallery/dt/operationvalidation.svg
+[psgallery]: https://www.powershellgallery.com/packages/operationvalidation
+[license-badge]: https://img.shields.io/github/license/powerShell/operation-validation-framework.svg
+[license]: https://raw.githubusercontent.com/PowerShell/Operation-Validation-Framework/master/LICENSE
