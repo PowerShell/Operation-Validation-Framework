@@ -220,7 +220,7 @@ function Get-OperationValidation {
 
             # Some OVF modules might not have a manifest (.psd1) file.
             if ($manifestFile) {
-                if ($PSVersionTable.PSVersion -ge 5) {
+                if ($PSVersionTable.PSVersion.Major -ge 5) {
                     $manifest = Import-PowerShellDataFile -Path $manifestFile.FullName
                 } else {
                     $manifest = Parse-Psd1 $manifestFile.FullName
