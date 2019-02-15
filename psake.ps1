@@ -20,14 +20,6 @@ task Init {
     "`nSTATUS: Testing with PowerShell $($PSVersionTable.PSVersion.Major)"
     'Build System Details:'
     Get-Item ENV:BH*
-    "`n"
-
-    'Pester', 'PSScriptAnalyzer' | Foreach-Object {
-        if (-not (Get-Module -Name $_ -ListAvailable -Verbose:$false -ErrorAction SilentlyContinue)) {
-            Install-Module -Name $_ -Repository PSGallery -Scope CurrentUser -AllowClobber -Confirm:$false -ErrorAction Stop
-        }
-        Import-Module -Name $_ -Verbose:$false -Force -ErrorAction Stop
-    }
 } -description 'Initialize build environment'
 
 task Test -Depends Init, Analyze, Pester -description 'Run test suite'

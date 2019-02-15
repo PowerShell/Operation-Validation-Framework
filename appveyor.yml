@@ -6,4 +6,4 @@ build: off
 
 #Kick off the CI/CD pipeline
 test_script:
-  - ps: . .\build.ps1 -Task Test
+  - ps: . .\build.ps1 -Task Test -Bootstrap
