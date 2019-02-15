@@ -1,5 +1,5 @@
 version: 1.1.0.{build}
-image: WMF 5
+image: Visual Studio 2017
 skip_commits:
   message: /updated readme.*|update readme.*s/
 build: off
