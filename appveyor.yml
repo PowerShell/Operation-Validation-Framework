@@ -1,9 +1,31 @@
 version: 1.1.0.{build}
-image: Visual Studio 2017
+image:
+- Visual Studio 2015
+- Visual Studio 2017
+- Ubuntu
+- Ubuntu1804
 skip_commits:
   message: /updated readme.*|update readme.*s/
+
 build: off
+
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
+
+  test_script:
+  - ps: ./build.ps1 -Task Test -Bootstrap
+
+-
+  matrix:
+    only:
+      - image: Ubuntu1804
+
+  test_script:
+  - ps: ./build.ps1 -Task Test -Bootstrap
 
 #Kick off the CI/CD pipeline
 test_script:
-  - ps: . .\build.ps1 -Task Test -Bootstrap
+  - pwsh: ./build.ps1 -Task Test -Bootstrap
