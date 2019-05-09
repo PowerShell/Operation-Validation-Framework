@@ -233,8 +233,11 @@ function Invoke-OperationValidation {
                 }
             }
 
+            [int]$testCount = 0
             Write-Verbose -Message ("EXECUTING: {0} [{1}]" -f $ti.FilePath,($ti.Name -join ","))
             foreach($ti in $testinfo) {
+                Write-Progress -Activity "Executing: $($ti.Name)" -PercentComplete ($testCount++ / $($testinfo.Count) * 100)
+            
                 $pesterParams = @{
                     TestName = $ti.Name
                     PassThru = $true
