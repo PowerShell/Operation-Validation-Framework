@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.0] - Unreleased
+
+###
+
+- [**#38**](https://github.com/PowerShell/Operation-Validation-Framework/pull/38) - Add progress bar during test execution (via [@My-Random-Thoughts](https://github.com/My-Random-Thoughts))
+
 ## [1.2.1] - 2019-02-15
 
 ### Fixed

@@ -13,7 +13,7 @@ RootModule = 'OperationValidation.psm1'
 # ModuleToProcess = 'OperationValidation.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.1'
+ModuleVersion = '1.3.0'
 
 # ID used to uniquely identify this module
 GUID = '25bd9e34-bff9-4552-a23d-854857b42462'
@@ -115,7 +115,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('Operation', 'Validation', 'Infrastructure', 'Testing', 'Pester', 'OVF')
+        Tags = @('Operation', 'Validation', 'Infrastructure', 'Testing', 'Pester', 'OVF', 'PSEdition_Desktop', 'PSEdition_Core')
 
         # A URL to the license for this module.
         LicenseUri = 'https://raw.githubusercontent.com/PowerShell/Operation-Validation-Framework/master/LICENSE'
