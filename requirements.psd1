@@ -9,6 +9,7 @@
             SkipPublisherCheck = $true
         }
     }
+    PowerShellBuild  = '0.3.0'
     psake            = 'latest'
     PSScriptAnalyzer = 'latest'
 }

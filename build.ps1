@@ -4,6 +4,9 @@ param(
     [parameter(ParameterSetName = 'task', position = 0)]
     [string[]]$Task = 'default',
 
+    # Optional properties to pass to psake
+    [hashtable]$Properties,
+
     # Bootstrap dependencies
     [switch]$Bootstrap,
 
@@ -26,13 +29,12 @@ if ($Bootstrap.IsPresent) {
 }
 
 # Execute psake task(s)
-$psakeFile = './psake.ps1'
+$psakeFile = './psakeFile.ps1'
 if ($PSCmdlet.ParameterSetName -eq 'Help') {
     Get-PSakeScriptTasks -buildFile $psakeFile  |
         Format-Table -Property Name, Description, Alias, DependsOn
 } else {
     Set-BuildEnvironment -Force
-
-    Invoke-psake -buildFile $psakeFile -taskList $Task -nologo
+    Invoke-psake -buildFile $psakeFile -taskList $Task -nologo -properties $Properties
     exit ( [int]( -not $psake.build_success ) )
 }
